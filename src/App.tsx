@@ -17,7 +17,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInstitutions from "./pages/admin/AdminInstitutions";
 import AdminTrails from "./pages/admin/AdminTrails";
 import AdminTrailEditor from "./pages/admin/AdminTrailEditor";
-import AdminReports from "./pages/admin/AdminReports";
+
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentTrail from "./pages/student/StudentTrail";
 import StudentLesson from "./pages/student/StudentLesson";
