@@ -44,7 +44,8 @@ export function FacilitatorDialog({ open, onOpenChange, onSaved }: Props) {
       });
 
       if (response.error) {
-        toast({ title: "Erro ao criar facilitador", description: String(response.error), variant: "destructive" });
+        const msg = response.error?.context?.body ? (await response.error.context.json?.())?.error : String(response.error);
+        toast({ title: "Erro ao criar facilitador", description: msg || "Erro desconhecido", variant: "destructive" });
       } else if (response.data?.error) {
         toast({ title: "Erro ao criar facilitador", description: response.data.error, variant: "destructive" });
       } else {

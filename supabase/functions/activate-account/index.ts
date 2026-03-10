@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       if (!email || !full_name || !cpf || !institution_id) {
         return new Response(
           JSON.stringify({ error: "Todos os campos são obrigatórios." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       if (existingProfile) {
         return new Response(
           JSON.stringify({ error: "Já existe um usuário com este CPF." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       if (authError) {
         return new Response(
           JSON.stringify({ error: authError.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
