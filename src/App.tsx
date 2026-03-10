@@ -43,6 +43,30 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/institutions"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminInstitutions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/trails"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminTrails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/trails/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminTrailEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/student"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
