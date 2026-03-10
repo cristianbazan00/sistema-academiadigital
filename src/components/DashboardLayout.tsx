@@ -19,6 +19,7 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
     { to: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/admin/institutions", label: "Instituições", icon: <Users className="h-4 w-4" /> },
     { to: "/admin/trails", label: "Trilhas", icon: <BookOpen className="h-4 w-4" /> },
+    { to: "/admin/reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" /> },
   ],
   admin_institution: [
     { to: "/institution", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
