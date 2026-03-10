@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut, Bell, LayoutDashboard, Users, BookOpen, GraduationCap } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, BookOpen, GraduationCap } from "lucide-react";
+import { NotificationsPopover } from "@/components/NotificationsPopover";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
