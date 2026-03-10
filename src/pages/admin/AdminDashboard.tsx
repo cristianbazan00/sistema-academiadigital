@@ -5,10 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, BookOpen, TrendingUp } from "lucide-react";
+import { Building2, Users, BookOpen, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface DashboardData {
   kpis: { institutions: number; students: number; trails: number; completion_pct: number };
@@ -33,16 +35,27 @@ const AdminDashboard = () => {
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 6));
   const [endDate, setEndDate] = useState(() => new Date());
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    const { data: result, error: rpcError } = await supabase.rpc("get_admin_dashboard_data", {
+      _start_date: startDate.toISOString(),
+      _end_date: endDate.toISOString(),
+    });
+    if (rpcError) {
+      setError("Não foi possível carregar os dados do painel. Tente novamente.");
+      console.error("Admin dashboard RPC error:", rpcError);
+    } else if (result) {
+      setData(result as unknown as DashboardData);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const { data: result } = await supabase.rpc("get_admin_dashboard_data", {
-        _start_date: startDate.toISOString(),
-        _end_date: endDate.toISOString(),
-      });
-      if (result) setData(result as unknown as DashboardData);
-    };
-    load();
+    loadData();
   }, [startDate, endDate]);
 
   const kpis = data?.kpis ?? { institutions: 0, students: 0, trails: 0, completion_pct: 0 };
