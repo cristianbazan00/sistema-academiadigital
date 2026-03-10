@@ -21,6 +21,8 @@ import InstitutionClasses from "./pages/institution/InstitutionClasses";
 import InstitutionFacilitators from "./pages/institution/InstitutionFacilitators";
 import InstitutionImport from "./pages/institution/InstitutionImport";
 import InstitutionReports from "./pages/institution/InstitutionReports";
+import FacilitatorDashboard from "./pages/facilitator/FacilitatorDashboard";
+import FacilitatorClasses from "./pages/facilitator/FacilitatorClasses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
