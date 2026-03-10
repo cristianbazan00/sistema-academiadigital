@@ -109,14 +109,24 @@ const InstitutionReports = () => {
         setWeeklyData(weeks);
       }
 
-      // XP ranking
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("full_name, xp_total, level")
-        .eq("institution_id", instId as string)
-        .order("xp_total", { ascending: false })
-        .limit(20);
-      setRanking((profiles as StudentRank[]) ?? []);
+      // XP ranking — only students
+      const { data: studentRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "student");
+      const onlyStudentIds = studentRoles?.map((r) => r.user_id) ?? [];
+      if (onlyStudentIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("full_name, xp_total, level")
+          .eq("institution_id", instId as string)
+          .in("id", onlyStudentIds)
+          .order("xp_total", { ascending: false })
+          .limit(20);
+        setRanking((profiles as StudentRank[]) ?? []);
+      } else {
+        setRanking([]);
+      }
     };
     load();
   }, [user, startDate, endDate]);

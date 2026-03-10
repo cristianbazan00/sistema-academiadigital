@@ -96,12 +96,23 @@ const AdminDashboard = () => {
         setRolesDist(Object.entries(counts).map(([k, v]) => ({ name: roleNames[k] || k, value: v })));
       }
 
-      const { data: top } = await supabase
-        .from("profiles")
-        .select("full_name, xp_total, level")
-        .order("xp_total", { ascending: false })
-        .limit(20);
-      setTopStudents((top as TopStudent[]) ?? []);
+      // Fetch only student IDs to filter the ranking
+      const { data: studentRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "student");
+      const studentIds = studentRoles?.map((r) => r.user_id) ?? [];
+      if (studentIds.length > 0) {
+        const { data: top } = await supabase
+          .from("profiles")
+          .select("full_name, xp_total, level")
+          .in("id", studentIds)
+          .order("xp_total", { ascending: false })
+          .limit(20);
+        setTopStudents((top as TopStudent[]) ?? []);
+      } else {
+        setTopStudents([]);
+      }
     };
     load();
   }, [startDate, endDate]);
