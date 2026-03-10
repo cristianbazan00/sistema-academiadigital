@@ -12,6 +12,9 @@ import ActivateAccount from "./pages/ActivateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminInstitutions from "./pages/admin/AdminInstitutions";
+import AdminTrails from "./pages/admin/AdminTrails";
+import AdminTrailEditor from "./pages/admin/AdminTrailEditor";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +39,30 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["admin_master"]}>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/institutions"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminInstitutions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/trails"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminTrails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/trails/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminTrailEditor />
                   </ProtectedRoute>
                 }
               />
