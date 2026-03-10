@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.import-students]
 verify_jwt = false
+
+[functions.create-institution-admin]
+verify_jwt = false
+
+[functions.delete-institution]
+verify_jwt = false
