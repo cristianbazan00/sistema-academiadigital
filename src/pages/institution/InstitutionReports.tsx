@@ -7,8 +7,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "rec
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Trophy } from "lucide-react";
-import { format, subWeeks, startOfWeek } from "date-fns";
+import { format, subMonths, subWeeks, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 interface ClassReport {
   id: string;
@@ -36,6 +37,8 @@ const chartConfig = {
 
 const InstitutionReports = () => {
   const { user } = useAuth();
+  const [startDate, setStartDate] = useState(() => subMonths(new Date(), 2));
+  const [endDate, setEndDate] = useState(() => new Date());
   const [classReports, setClassReports] = useState<ClassReport[]>([]);
   const [ranking, setRanking] = useState<StudentRank[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyCompletion[]>([]);
@@ -43,6 +46,9 @@ const InstitutionReports = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
+      const startIso = startDate.toISOString();
+      const endIso = endDate.toISOString();
+
       const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
       if (!instId) return;
 
@@ -51,7 +57,6 @@ const InstitutionReports = () => {
 
       const reports: ClassReport[] = [];
       const allStudentIds: string[] = [];
-      const allLessonIds: string[] = [];
 
       for (const c of classes) {
         const { data: members } = await supabase.from("class_members").select("user_id").eq("class_id", c.id).eq("role", "student");
@@ -67,13 +72,14 @@ const InstitutionReports = () => {
             const totalLessons = lessons?.length ?? 0;
             if (totalLessons > 0) {
               const lessonIds = lessons!.map((l) => l.id);
-              allLessonIds.push(...lessonIds);
               const { count } = await supabase
                 .from("lesson_progress")
                 .select("id", { count: "exact", head: true })
                 .in("user_id", studentIds)
                 .in("lesson_id", lessonIds)
-                .eq("completed", true);
+                .eq("completed", true)
+                .gte("completed_at", startIso)
+                .lte("completed_at", endIso);
               completionPct = Math.round(((count ?? 0) / (totalLessons * studentIds.length)) * 100);
             }
           }
@@ -82,20 +88,23 @@ const InstitutionReports = () => {
       }
       setClassReports(reports);
 
-      // Weekly completion trend (last 8 weeks)
+      // Weekly completion trend within range
       if (allStudentIds.length > 0) {
+        const weekCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const weeksToShow = Math.min(weekCount, 12);
         const weeks: WeeklyCompletion[] = [];
-        for (let i = 7; i >= 0; i--) {
-          const start = startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 });
-          const end = startOfWeek(subWeeks(new Date(), i - 1), { weekStartsOn: 1 });
+        for (let i = weeksToShow - 1; i >= 0; i--) {
+          const wStart = startOfWeek(subWeeks(endDate, i), { weekStartsOn: 1 });
+          const wEnd = startOfWeek(subWeeks(endDate, i - 1), { weekStartsOn: 1 });
+          if (wStart < startDate) continue;
           const { count } = await supabase
             .from("lesson_progress")
             .select("id", { count: "exact", head: true })
             .in("user_id", allStudentIds.slice(0, 100))
             .eq("completed", true)
-            .gte("completed_at", start.toISOString())
-            .lt("completed_at", end.toISOString());
-          weeks.push({ week: format(start, "dd/MM", { locale: ptBR }), completions: count ?? 0 });
+            .gte("completed_at", wStart.toISOString())
+            .lt("completed_at", wEnd.toISOString());
+          weeks.push({ week: format(wStart, "dd/MM", { locale: ptBR }), completions: count ?? 0 });
         }
         setWeeklyData(weeks);
       }
@@ -110,14 +119,16 @@ const InstitutionReports = () => {
       setRanking((profiles as StudentRank[]) ?? []);
     };
     load();
-  }, [user]);
+  }, [user, startDate, endDate]);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+          <DateRangeFilter startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+        </div>
 
-        {/* Completion by class - BarChart */}
         <Card>
           <CardHeader><CardTitle>Conclusão por Turma</CardTitle></CardHeader>
           <CardContent>
@@ -137,7 +148,6 @@ const InstitutionReports = () => {
           </CardContent>
         </Card>
 
-        {/* Weekly completion trend */}
         <Card>
           <CardHeader><CardTitle>Evolução de Conclusões por Semana</CardTitle></CardHeader>
           <CardContent>
@@ -157,7 +167,6 @@ const InstitutionReports = () => {
           </CardContent>
         </Card>
 
-        {/* XP Ranking */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -178,7 +187,6 @@ const InstitutionReports = () => {
                     <Bar dataKey="xp_total" fill="var(--color-xp_total)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ChartContainer>
-
                 <Table>
                   <TableHeader>
                     <TableRow>

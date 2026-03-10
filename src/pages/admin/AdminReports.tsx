@@ -6,8 +6,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Users, BookOpen, TrendingUp } from "lucide-react";
-import { format, subMonths, startOfMonth } from "date-fns";
+import { format, subMonths, startOfMonth, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 interface InstitutionStudents {
   name: string;
@@ -38,6 +39,8 @@ const chartConfig = {
 };
 
 const AdminReports = () => {
+  const [startDate, setStartDate] = useState(() => subMonths(new Date(), 6));
+  const [endDate, setEndDate] = useState(() => new Date());
   const [kpis, setKpis] = useState({ institutions: 0, students: 0, trails: 0, completion: 0 });
   const [instStudents, setInstStudents] = useState<InstitutionStudents[]>([]);
   const [monthlyGrowth, setMonthlyGrowth] = useState<MonthlyGrowth[]>([]);
@@ -46,6 +49,9 @@ const AdminReports = () => {
 
   useEffect(() => {
     const load = async () => {
+      const startIso = startDate.toISOString();
+      const endIso = endDate.toISOString();
+
       // KPIs
       const [{ count: instCount }, { count: studentCount }, { count: trailCount }] = await Promise.all([
         supabase.from("institutions").select("id", { count: "exact", head: true }),
@@ -53,9 +59,18 @@ const AdminReports = () => {
         supabase.from("trails").select("id", { count: "exact", head: true }),
       ]);
 
-      // Completion rate
-      const { count: totalProgress } = await supabase.from("lesson_progress").select("id", { count: "exact", head: true });
-      const { count: completedProgress } = await supabase.from("lesson_progress").select("id", { count: "exact", head: true }).eq("completed", true);
+      // Completion rate within date range
+      const { count: totalProgress } = await supabase
+        .from("lesson_progress")
+        .select("id", { count: "exact", head: true })
+        .gte("completed_at", startIso)
+        .lte("completed_at", endIso);
+      const { count: completedProgress } = await supabase
+        .from("lesson_progress")
+        .select("id", { count: "exact", head: true })
+        .eq("completed", true)
+        .gte("completed_at", startIso)
+        .lte("completed_at", endIso);
       const completion = totalProgress ? Math.round(((completedProgress ?? 0) / totalProgress) * 100) : 0;
 
       setKpis({
@@ -73,23 +88,26 @@ const AdminReports = () => {
           const { count } = await supabase
             .from("profiles")
             .select("id", { count: "exact", head: true })
-            .eq("institution_id", inst.id);
+            .eq("institution_id", inst.id)
+            .gte("created_at", startIso)
+            .lte("created_at", endIso);
           results.push({ name: inst.name, students: count ?? 0 });
         }
         setInstStudents(results.sort((a, b) => b.students - a.students));
       }
 
-      // Monthly growth (last 6 months)
+      // Monthly growth within range
+      const monthStarts = eachMonthOfInterval({ start: startOfMonth(startDate), end: endDate });
       const months: MonthlyGrowth[] = [];
-      for (let i = 5; i >= 0; i--) {
-        const start = startOfMonth(subMonths(new Date(), i));
-        const end = startOfMonth(subMonths(new Date(), i - 1));
+      for (let i = 0; i < monthStarts.length; i++) {
+        const mStart = monthStarts[i];
+        const mEnd = i + 1 < monthStarts.length ? monthStarts[i + 1] : endDate;
         const { count } = await supabase
           .from("profiles")
           .select("id", { count: "exact", head: true })
-          .gte("created_at", start.toISOString())
-          .lt("created_at", end.toISOString());
-        months.push({ month: format(start, "MMM", { locale: ptBR }), count: count ?? 0 });
+          .gte("created_at", mStart.toISOString())
+          .lt("created_at", mEnd.toISOString());
+        months.push({ month: format(mStart, "MMM yy", { locale: ptBR }), count: count ?? 0 });
       }
       setMonthlyGrowth(months);
 
@@ -103,9 +121,7 @@ const AdminReports = () => {
       const { data: roles } = await supabase.from("user_roles").select("role");
       if (roles) {
         const counts: Record<string, number> = {};
-        roles.forEach((r) => {
-          counts[r.role] = (counts[r.role] || 0) + 1;
-        });
+        roles.forEach((r) => { counts[r.role] = (counts[r.role] || 0) + 1; });
         setRolesDist(Object.entries(counts).map(([k, v]) => ({ name: roleNames[k] || k, value: v })));
       }
 
@@ -118,7 +134,7 @@ const AdminReports = () => {
       setTopStudents((top as TopStudent[]) ?? []);
     };
     load();
-  }, []);
+  }, [startDate, endDate]);
 
   const kpiCards = [
     { label: "Instituições", value: kpis.institutions, icon: Building2, color: "text-primary" },
@@ -130,7 +146,10 @@ const AdminReports = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+          <DateRangeFilter startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,9 +166,7 @@ const AdminReports = () => {
           ))}
         </div>
 
-        {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Students per institution */}
           <Card>
             <CardHeader><CardTitle>Alunos por Instituição</CardTitle></CardHeader>
             <CardContent>
@@ -169,7 +186,6 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          {/* Monthly growth */}
           <Card>
             <CardHeader><CardTitle>Novos Alunos por Mês</CardTitle></CardHeader>
             <CardContent>
@@ -190,7 +206,6 @@ const AdminReports = () => {
           </Card>
         </div>
 
-        {/* Role distribution */}
         <Card>
           <CardHeader><CardTitle>Distribuição de Papéis</CardTitle></CardHeader>
           <CardContent className="flex justify-center">
@@ -211,7 +226,6 @@ const AdminReports = () => {
           </CardContent>
         </Card>
 
-        {/* Top students */}
         <Card>
           <CardHeader><CardTitle>Top 20 Alunos por XP</CardTitle></CardHeader>
           <CardContent>

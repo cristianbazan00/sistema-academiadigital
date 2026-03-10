@@ -7,6 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Trophy } from "lucide-react";
+import { subMonths } from "date-fns";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 interface ClassCompletion {
   name: string;
@@ -27,13 +29,17 @@ const chartConfig = {
 
 const FacilitatorReports = () => {
   const { user } = useAuth();
+  const [startDate, setStartDate] = useState(() => subMonths(new Date(), 3));
+  const [endDate, setEndDate] = useState(() => new Date());
   const [classCompletions, setClassCompletions] = useState<ClassCompletion[]>([]);
   const [studentRanking, setStudentRanking] = useState<StudentXp[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      // Get facilitator's classes
+      const startIso = startDate.toISOString();
+      const endIso = endDate.toISOString();
+
       const { data: memberships } = await supabase
         .from("class_members")
         .select("class_id")
@@ -66,7 +72,6 @@ const FacilitatorReports = () => {
           continue;
         }
 
-        // Completion
         let completionPct = 0;
         if (cls.trail_id) {
           const { data: modules } = await supabase.from("modules").select("id").eq("trail_id", cls.trail_id);
@@ -81,22 +86,21 @@ const FacilitatorReports = () => {
                 .select("id", { count: "exact", head: true })
                 .in("user_id", studentIds)
                 .in("lesson_id", lessonIds)
-                .eq("completed", true);
+                .eq("completed", true)
+                .gte("completed_at", startIso)
+                .lte("completed_at", endIso);
               completionPct = Math.round(((count ?? 0) / (totalLessons * studentIds.length)) * 100);
             }
           }
         }
         completions.push({ name: cls.name, completion: completionPct });
 
-        // Student XP
         const { data: profiles } = await supabase
           .from("profiles")
           .select("full_name, xp_total, level")
           .in("id", studentIds);
         if (profiles) {
-          profiles.forEach((p) =>
-            allStudents.push({ ...p, className: cls.name })
-          );
+          profiles.forEach((p) => allStudents.push({ ...p, className: cls.name }));
         }
       }
 
@@ -104,12 +108,15 @@ const FacilitatorReports = () => {
       setStudentRanking(allStudents.sort((a, b) => b.xp_total - a.xp_total));
     };
     load();
-  }, [user]);
+  }, [user, startDate, endDate]);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+          <DateRangeFilter startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+        </div>
 
         <Card>
           <CardHeader><CardTitle>Conclusão por Turma</CardTitle></CardHeader>
@@ -150,7 +157,6 @@ const FacilitatorReports = () => {
                     <Bar dataKey="xp_total" fill="var(--color-xp_total)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ChartContainer>
-
                 <Table>
                   <TableHeader>
                     <TableRow>
