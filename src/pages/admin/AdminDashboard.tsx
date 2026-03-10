@@ -75,6 +75,34 @@ const AdminDashboard = () => {
     { label: "Taxa de Conclusão", value: `${kpis.completion_pct}%`, icon: TrendingUp, color: "text-primary" },
   ];
 
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-display font-bold">Painel Admin Master</h1>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar dados</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={loadData}>Tentar novamente</Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
