@@ -25,10 +25,8 @@ import InstitutionDashboard from "./pages/institution/InstitutionDashboard";
 import InstitutionClasses from "./pages/institution/InstitutionClasses";
 import InstitutionFacilitators from "./pages/institution/InstitutionFacilitators";
 import InstitutionImport from "./pages/institution/InstitutionImport";
-import InstitutionReports from "./pages/institution/InstitutionReports";
 import FacilitatorDashboard from "./pages/facilitator/FacilitatorDashboard";
 import FacilitatorClasses from "./pages/facilitator/FacilitatorClasses";
-import FacilitatorReports from "./pages/facilitator/FacilitatorReports";
 import StudentReports from "./pages/student/StudentReports";
 import NotFound from "./pages/NotFound";
 
