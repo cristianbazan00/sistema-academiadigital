@@ -36,7 +36,7 @@ const InstitutionClasses = () => {
     if (!user) return;
     const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
     if (!instId) return;
-    const { data } = await supabase.from("classes").select("*").eq("institution_id", instId as string).order("created_at", { ascending: false });
+    const { data } = await supabase.from("classes").select("*, trails(title)").eq("institution_id", instId as string).order("created_at", { ascending: false });
     setClasses((data as ClassRow[]) ?? []);
   };
 
