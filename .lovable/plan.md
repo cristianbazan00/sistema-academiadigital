@@ -1,39 +1,41 @@
 
 
-## Limpar Todas as Tabelas (Manter Admin Master)
+## Análise: Dashboard vs Relatórios do Admin Master
 
-O Admin Master (`ea4abe82-2298-424b-8b48-b2a605189fcb`) será preservado. Todos os demais dados serão removidos.
+### Sobreposição
 
-### Ordem de Limpeza (respeitando FKs)
-
-| Passo | Tabela | Ação |
+| Informação | Dashboard | Relatórios |
 |---|---|---|
-| 1 | `notifications` | DELETE ALL |
-| 2 | `user_xp_log` | DELETE ALL |
-| 3 | `user_badges` | DELETE ALL |
-| 4 | `submissions` | DELETE ALL |
-| 5 | `lesson_progress` | DELETE ALL |
-| 6 | `extra_activities` | DELETE ALL |
-| 7 | `class_members` | DELETE ALL |
-| 8 | `classes` | DELETE ALL |
-| 9 | `lesson_steps` | DELETE ALL |
-| 10 | `activity_questions` | DELETE ALL |
-| 11 | `activities` | DELETE ALL |
-| 12 | `lessons` | DELETE ALL |
-| 13 | `modules` | DELETE ALL |
-| 14 | `trails` | DELETE ALL |
-| 15 | `user_roles` | DELETE WHERE user_id != admin_master |
-| 16 | `profiles` | DELETE WHERE id != admin_master |
-| 17 | `institutions` | DELETE ALL |
-| 18 | Auth users | Deletar via Edge Function todos os auth.users exceto admin_master |
+| Total Instituições | ✅ | ✅ |
+| Total Alunos | ✅ | ✅ |
+| Total Trilhas | ✅ | ✅ |
+| Taxa de Conclusão | ✅ (fixo "—") | ✅ (calculada) |
+| Alunos por Instituição | — | ✅ |
+| Novos Alunos por Mês | — | ✅ |
+| Distribuição de Papéis | — | ✅ |
+| Top 20 Alunos por XP | — | ✅ |
+| Atividade Recente | ✅ (placeholder vazio) | — |
+| Filtro de Data | — | ✅ |
 
-### Implementação
+**Conclusão**: O Dashboard é um subconjunto fraco do Relatórios. Os 4 KPI cards são idênticos (e no Dashboard a taxa de conclusão nem funciona — mostra "—"). O card "Atividade Recente" é apenas um placeholder sem dados reais. Não há justificativa para manter duas páginas separadas.
 
-1. **Edge Function `cleanup-platform`**: Uma função temporária que usa service_role para deletar dados de todas as tabelas na ordem correta e remover auth users extras via `supabase.auth.admin.deleteUser()`.
+### Recomendação: Unificar em um único painel
 
-2. **Invocar a função** uma vez para executar a limpeza.
+Absorver tudo na página **Dashboard** (`/admin`), eliminando `/admin/reports`.
 
-3. **Remover a função** após uso.
+### Plano
 
-Nenhuma alteração de schema -- apenas remoção de dados.
+1. **`AdminDashboard.tsx`** — Substituir pelo conteúdo completo do `AdminReports.tsx`, mantendo o título "Painel Admin Master" e adicionando o filtro de data e todos os gráficos (BarChart, LineChart, PieChart, tabela Top 20).
+
+2. **Remover `AdminReports.tsx`** — Arquivo não será mais necessário.
+
+3. **`DashboardLayout.tsx`** — Remover o link "Relatórios" do menu `admin_master`.
+
+4. **`App.tsx`** — Remover a rota `/admin/reports`.
+
+### Resultado
+
+- Uma única página `/admin` com KPIs funcionais, filtro de data, gráficos e ranking
+- Navegação mais limpa no sidebar (sem item redundante)
+- Zero perda de funcionalidade
 
