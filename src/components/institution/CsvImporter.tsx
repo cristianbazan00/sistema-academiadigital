@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, AlertCircle } from "lucide-react";
-import { validateCPF } from "@/lib/cpf";
+import { isValidCpf } from "@/lib/cpf";
 
 export interface CsvRow {
   cpf: string;
