@@ -1,0 +1,1 @@
+ALTER TABLE public.classes ADD COLUMN trail_id uuid REFERENCES public.trails(id);
