@@ -113,14 +113,6 @@ const App = () => (
                 }
               />
               <Route
-                path="/institution/reports"
-                element={
-                  <ProtectedRoute allowedRoles={["admin_institution"]}>
-                    <InstitutionReports />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/facilitator"
                 element={
                   <ProtectedRoute allowedRoles={["facilitator"]}>
@@ -133,14 +125,6 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["facilitator"]}>
                     <FacilitatorClasses />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/facilitator/reports"
-                element={
-                  <ProtectedRoute allowedRoles={["facilitator"]}>
-                    <FacilitatorReports />
                   </ProtectedRoute>
                 }
               />
