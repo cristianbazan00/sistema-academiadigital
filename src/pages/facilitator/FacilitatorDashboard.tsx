@@ -83,9 +83,7 @@ const FacilitatorDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <DashboardSkeleton kpiCount={3} sections={2} />
       </DashboardLayout>
     );
   }

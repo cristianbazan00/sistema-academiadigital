@@ -6,7 +6,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, GraduationCap, BookOpen, TrendingUp, Trophy, AlertCircle, Loader2 } from "lucide-react";
+import { Users, GraduationCap, BookOpen, TrendingUp, Trophy, AlertCircle } from "lucide-react";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";

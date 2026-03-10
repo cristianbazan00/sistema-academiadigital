@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, BookOpen, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
+import { Building2, Users, BookOpen, TrendingUp, AlertCircle } from "lucide-react";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
