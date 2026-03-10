@@ -140,6 +140,7 @@ export type Database = {
           institution_id: string
           is_active: boolean
           name: string
+          trail_id: string | null
         }
         Insert: {
           created_at?: string
@@ -148,6 +149,7 @@ export type Database = {
           institution_id: string
           is_active?: boolean
           name: string
+          trail_id?: string | null
         }
         Update: {
           created_at?: string
@@ -156,6 +158,7 @@ export type Database = {
           institution_id?: string
           is_active?: boolean
           name?: string
+          trail_id?: string | null
         }
         Relationships: [
           {
@@ -163,6 +166,13 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_trail_id_fkey"
+            columns: ["trail_id"]
+            isOneToOne: false
+            referencedRelation: "trails"
             referencedColumns: ["id"]
           },
         ]
