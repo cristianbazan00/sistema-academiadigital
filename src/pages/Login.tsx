@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CpfInput } from "@/components/CpfInput";
+import { isValidCpf } from "@/lib/cpf";
 import { Loader2, Rocket } from "lucide-react";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,10 +22,26 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!isValidCpf(cpf)) {
+      setError("CPF inválido.");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signIn(email, password);
+
+    // Lookup email by CPF
+    const { data: email, error: rpcError } = await supabase.rpc("get_email_by_cpf", { _cpf: cpf });
+
+    if (rpcError || !email) {
+      setLoading(false);
+      setError("Credenciais inválidas. Tente novamente.");
+      return;
+    }
+
+    const { error: signInError } = await signIn(email, password);
     setLoading(false);
-    if (error) {
+    if (signInError) {
       setError("Credenciais inválidas. Tente novamente.");
     } else {
       navigate("/");
@@ -46,15 +65,8 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label htmlFor="cpf">CPF</Label>
+              <CpfInput id="cpf" value={cpf} onValueChange={setCpf} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -68,13 +80,20 @@ const Login = () => {
               />
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
             <Button type="submit" className="w-full font-semibold" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar"}
             </Button>
+
+            <div className="flex justify-between text-sm">
+              <Link to="/forgot-password" className="text-primary hover:underline">
+                Esqueci minha senha
+              </Link>
+              <Link to="/activate" className="text-primary hover:underline">
+                Ativar minha conta
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
