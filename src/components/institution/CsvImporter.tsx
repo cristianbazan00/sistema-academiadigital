@@ -40,7 +40,7 @@ export function CsvImporter({ onImport, importing }: Props) {
         const full_name = cols[1] ?? "";
         const class_name = cols[2] ?? "";
         const cleanCpf = cpf.replace(/\D/g, "");
-        return { cpf: cleanCpf, full_name, class_name, valid: validateCPF(cleanCpf) && !!full_name && !!class_name };
+        return { cpf: cleanCpf, full_name, class_name, valid: isValidCpf(cleanCpf) && !!full_name && !!class_name };
       });
       setRows(parsed);
     };
