@@ -31,7 +31,9 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
     { to: "/facilitator/classes", label: "Minhas Turmas", icon: <Users className="h-4 w-4" /> },
   ],
   student: [
-    { to: "/student", label: "Minha Trilha", icon: <GraduationCap className="h-4 w-4" /> },
+    { to: "/student", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { to: "/student/trail", label: "Minha Trilha", icon: <GraduationCap className="h-4 w-4" /> },
+    { to: "/student/badges", label: "Conquistas", icon: <BookOpen className="h-4 w-4" /> },
   ],
 };
 

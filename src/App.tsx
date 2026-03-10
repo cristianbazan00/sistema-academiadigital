@@ -139,6 +139,30 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/student/trail"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <StudentTrail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/lesson/:lessonId"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <StudentLesson />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/badges"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
