@@ -806,8 +806,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_dashboard_data: {
+        Args: { _end_date: string; _start_date: string }
+        Returns: Json
+      }
       get_class_institution_id: { Args: { _class_id: string }; Returns: string }
       get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
+      get_facilitator_dashboard_data: {
+        Args: { _end_date: string; _start_date: string; _user_id: string }
+        Returns: Json
+      }
+      get_institution_dashboard_data: {
+        Args: { _end_date: string; _start_date: string; _user_id: string }
+        Returns: Json
+      }
       get_user_institution_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
