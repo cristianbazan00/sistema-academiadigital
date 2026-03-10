@@ -59,6 +59,40 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Step 1: Remove old admin(s) for this institution ──
+    // Find all profiles linked to this institution
+    const { data: linkedProfiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("institution_id", institution_id);
+
+    if (linkedProfiles && linkedProfiles.length > 0) {
+      for (const profile of linkedProfiles) {
+        // Check if this profile has admin_institution role
+        const { data: oldRole } = await supabaseAdmin
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", profile.id)
+          .eq("role", "admin_institution")
+          .maybeSingle();
+
+        if (oldRole) {
+          // Remove admin_institution role from old admin
+          await supabaseAdmin
+            .from("user_roles")
+            .delete()
+            .eq("id", oldRole.id);
+
+          // Unlink old admin from institution
+          await supabaseAdmin
+            .from("profiles")
+            .update({ institution_id: null })
+            .eq("id", profile.id);
+        }
+      }
+    }
+
+    // ── Step 2: Set up new admin ──
     // Check if user already exists with this email
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email === admin_email);
