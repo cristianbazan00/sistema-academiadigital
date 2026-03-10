@@ -641,6 +641,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_class_institution_id: { Args: { _class_id: string }; Returns: string }
       get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
       get_user_institution_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
@@ -648,6 +649,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_class_member: {
+        Args: { _class_id: string; _user_id: string }
         Returns: boolean
       }
     }
