@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Users, BookOpen, GraduationCap } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, BookOpen, GraduationCap, BarChart3 } from "lucide-react";
 import { NotificationsPopover } from "@/components/NotificationsPopover";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
     { to: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/admin/institutions", label: "Instituições", icon: <Users className="h-4 w-4" /> },
     { to: "/admin/trails", label: "Trilhas", icon: <BookOpen className="h-4 w-4" /> },
+    { to: "/admin/reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" /> },
   ],
   admin_institution: [
     { to: "/institution", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -30,11 +31,13 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
   facilitator: [
     { to: "/facilitator", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/facilitator/classes", label: "Minhas Turmas", icon: <Users className="h-4 w-4" /> },
+    { to: "/facilitator/reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" /> },
   ],
   student: [
     { to: "/student", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/student/trail", label: "Minha Trilha", icon: <GraduationCap className="h-4 w-4" /> },
     { to: "/student/badges", label: "Conquistas", icon: <BookOpen className="h-4 w-4" /> },
+    { to: "/student/reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" /> },
   ],
 };
 

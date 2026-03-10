@@ -17,6 +17,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInstitutions from "./pages/admin/AdminInstitutions";
 import AdminTrails from "./pages/admin/AdminTrails";
 import AdminTrailEditor from "./pages/admin/AdminTrailEditor";
+import AdminReports from "./pages/admin/AdminReports";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentTrail from "./pages/student/StudentTrail";
 import StudentLesson from "./pages/student/StudentLesson";
@@ -27,6 +28,8 @@ import InstitutionImport from "./pages/institution/InstitutionImport";
 import InstitutionReports from "./pages/institution/InstitutionReports";
 import FacilitatorDashboard from "./pages/facilitator/FacilitatorDashboard";
 import FacilitatorClasses from "./pages/facilitator/FacilitatorClasses";
+import FacilitatorReports from "./pages/facilitator/FacilitatorReports";
+import StudentReports from "./pages/student/StudentReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +79,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["admin_master"]}>
                     <AdminTrailEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_master"]}>
+                    <AdminReports />
                   </ProtectedRoute>
                 }
               />
@@ -136,6 +147,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/facilitator/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["facilitator"]}>
+                    <FacilitatorReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/student"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
@@ -164,6 +183,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <StudentReports />
                   </ProtectedRoute>
                 }
               />
