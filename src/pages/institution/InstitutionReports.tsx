@@ -31,7 +31,7 @@ const InstitutionReports = () => {
       const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
       if (!instId) return;
 
-      const { data: classes } = await supabase.from("classes").select("id, name").eq("institution_id", instId as string);
+      const { data: classes } = await supabase.from("classes").select("id, name, trail_id").eq("institution_id", instId as string);
       if (!classes) return;
 
       const reports: ClassReport[] = [];
