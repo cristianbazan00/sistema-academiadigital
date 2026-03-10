@@ -85,9 +85,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3">
           <h2 className="font-display font-semibold text-lg">{roleLabels[userRole ?? ""]}</h2>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationsPopover />
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="h-5 w-5" />
