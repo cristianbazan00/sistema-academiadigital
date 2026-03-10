@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Progress } from "@/components/ui/progress";
 
 interface PasswordStrengthProps {
   password: string;
