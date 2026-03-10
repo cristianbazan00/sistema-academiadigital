@@ -655,6 +655,10 @@ export type Database = {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
       }
+      is_facilitator_of_class: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_type: "multiple_choice" | "behavioral_scale"
