@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
     // ── Step 2: Set up new admin ──
     // Check if user already exists with this email
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers({ filter: admin_email });
     const existingUser = existingUsers?.users?.find(u => u.email === admin_email);
 
     let userId: string;
