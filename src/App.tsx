@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import LoginInstitution from "./pages/LoginInstitution";
 import ActivateAccount from "./pages/ActivateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
+import ForgotPasswordInstitution from "./pages/ForgotPasswordInstitution";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInstitutions from "./pages/admin/AdminInstitutions";
