@@ -6,10 +6,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, GraduationCap, BookOpen, TrendingUp, Trophy } from "lucide-react";
+import { Users, GraduationCap, BookOpen, TrendingUp, Trophy, AlertCircle, Loader2 } from "lucide-react";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface DashboardData {
   kpis: { classes: number; students: number; facilitators: number; avg_completion: number };
@@ -29,18 +31,29 @@ const InstitutionDashboard = () => {
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 2));
   const [endDate, setEndDate] = useState(() => new Date());
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    const { data: result, error: rpcError } = await supabase.rpc("get_institution_dashboard_data", {
+      _user_id: user.id,
+      _start_date: startDate.toISOString(),
+      _end_date: endDate.toISOString(),
+    });
+    if (rpcError) {
+      setError("Não foi possível carregar os dados do painel. Tente novamente.");
+      console.error("Institution dashboard RPC error:", rpcError);
+    } else if (result) {
+      setData(result as unknown as DashboardData);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: result } = await supabase.rpc("get_institution_dashboard_data", {
-        _user_id: user.id,
-        _start_date: startDate.toISOString(),
-        _end_date: endDate.toISOString(),
-      });
-      if (result) setData(result as unknown as DashboardData);
-    };
-    load();
+    loadData();
   }, [user, startDate, endDate]);
 
   const kpis = data?.kpis ?? { classes: 0, students: 0, facilitators: 0, avg_completion: 0 };
@@ -55,6 +68,34 @@ const InstitutionDashboard = () => {
     { label: "Facilitadores", value: kpis.facilitators, icon: Users, color: "text-primary" },
     { label: "Conclusão Média", value: `${kpis.avg_completion}%`, icon: TrendingUp, color: "text-primary" },
   ];
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-display font-bold">Dashboard da Instituição</h1>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar dados</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={loadData}>Tentar novamente</Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

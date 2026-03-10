@@ -5,10 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, BookOpen, TrendingUp } from "lucide-react";
+import { Building2, Users, BookOpen, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface DashboardData {
   kpis: { institutions: number; students: number; trails: number; completion_pct: number };
@@ -33,16 +35,27 @@ const AdminDashboard = () => {
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 6));
   const [endDate, setEndDate] = useState(() => new Date());
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    const { data: result, error: rpcError } = await supabase.rpc("get_admin_dashboard_data", {
+      _start_date: startDate.toISOString(),
+      _end_date: endDate.toISOString(),
+    });
+    if (rpcError) {
+      setError("Não foi possível carregar os dados do painel. Tente novamente.");
+      console.error("Admin dashboard RPC error:", rpcError);
+    } else if (result) {
+      setData(result as unknown as DashboardData);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const { data: result } = await supabase.rpc("get_admin_dashboard_data", {
-        _start_date: startDate.toISOString(),
-        _end_date: endDate.toISOString(),
-      });
-      if (result) setData(result as unknown as DashboardData);
-    };
-    load();
+    loadData();
   }, [startDate, endDate]);
 
   const kpis = data?.kpis ?? { institutions: 0, students: 0, trails: 0, completion_pct: 0 };
@@ -61,6 +74,34 @@ const AdminDashboard = () => {
     { label: "Trilhas", value: kpis.trails, icon: BookOpen, color: "text-primary" },
     { label: "Taxa de Conclusão", value: `${kpis.completion_pct}%`, icon: TrendingUp, color: "text-primary" },
   ];
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-display font-bold">Painel Admin Master</h1>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar dados</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={loadData}>Tentar novamente</Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

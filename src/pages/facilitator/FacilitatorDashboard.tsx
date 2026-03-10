@@ -6,9 +6,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, ClipboardList, TrendingUp, Trophy } from "lucide-react";
+import { Users, BookOpen, ClipboardList, TrendingUp, Trophy, AlertCircle, Loader2 } from "lucide-react";
 import { subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface DashboardData {
   kpis: { classes: number; students: number; extras: number; avg_completion: number };
@@ -26,18 +28,29 @@ const FacilitatorDashboard = () => {
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 3));
   const [endDate, setEndDate] = useState(() => new Date());
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    const { data: result, error: rpcError } = await supabase.rpc("get_facilitator_dashboard_data", {
+      _user_id: user.id,
+      _start_date: startDate.toISOString(),
+      _end_date: endDate.toISOString(),
+    });
+    if (rpcError) {
+      setError("Não foi possível carregar os dados do painel. Tente novamente.");
+      console.error("Facilitator dashboard RPC error:", rpcError);
+    } else if (result) {
+      setData(result as unknown as DashboardData);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data: result } = await supabase.rpc("get_facilitator_dashboard_data", {
-        _user_id: user.id,
-        _start_date: startDate.toISOString(),
-        _end_date: endDate.toISOString(),
-      });
-      if (result) setData(result as unknown as DashboardData);
-    };
-    load();
+    loadData();
   }, [user, startDate, endDate]);
 
   const kpis = data?.kpis ?? { classes: 0, students: 0, extras: 0, avg_completion: 0 };
@@ -48,6 +61,34 @@ const FacilitatorDashboard = () => {
     { label: "Atividades Extras", value: kpis.extras, icon: ClipboardList, color: "text-primary" },
     { label: "Conclusão Média", value: `${kpis.avg_completion}%`, icon: TrendingUp, color: "text-primary" },
   ];
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl font-display font-bold">Olá, {profile?.full_name || "Facilitador"}! 👋</h1>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar dados</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={loadData}>Tentar novamente</Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
