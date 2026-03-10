@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import LoginInstitution from "./pages/LoginInstitution";
 import ActivateAccount from "./pages/ActivateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
+import ForgotPasswordInstitution from "./pages/ForgotPasswordInstitution";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInstitutions from "./pages/admin/AdminInstitutions";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/login/institution" element={<LoginInstitution />} />
               <Route path="/activate" element={<ActivateAccount />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/forgot-password/institution" element={<ForgotPasswordInstitution />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/admin"

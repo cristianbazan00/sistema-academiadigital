@@ -76,7 +76,7 @@ const LoginInstitution = () => {
             </Button>
 
             <div className="flex justify-between text-sm">
-              <Link to="/forgot-password" className="text-primary hover:underline">
+              <Link to="/forgot-password/institution" className="text-primary hover:underline">
                 Esqueci minha senha
               </Link>
               <Link to="/login" className="text-primary hover:underline">
