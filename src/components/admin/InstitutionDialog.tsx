@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Loader2, UserCog } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -21,6 +23,10 @@ export function InstitutionDialog({ open, onOpenChange, institution, onSaved }: 
   const [adminName, setAdminName] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Current admin info (edit mode)
+  const [currentAdmin, setCurrentAdmin] = useState<{ id: string; full_name: string; email: string } | null>(null);
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
+
   useEffect(() => {
     if (institution) {
       setName(institution.name);
@@ -28,14 +34,55 @@ export function InstitutionDialog({ open, onOpenChange, institution, onSaved }: 
       setLogoUrl(institution.logo_url ?? "");
       setAdminEmail("");
       setAdminName("");
+      fetchCurrentAdmin(institution.id);
     } else {
       setName("");
       setSlug("");
       setLogoUrl("");
       setAdminEmail("");
       setAdminName("");
+      setCurrentAdmin(null);
     }
   }, [institution, open]);
+
+  const fetchCurrentAdmin = async (institutionId: string) => {
+    setLoadingAdmin(true);
+    try {
+      // Find profiles with this institution_id that have admin_institution role
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("institution_id", institutionId);
+
+      if (profiles && profiles.length > 0) {
+        // Check which one has admin_institution role
+        for (const profile of profiles) {
+          const { data: role } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profile.id)
+            .eq("role", "admin_institution")
+            .maybeSingle();
+
+          if (role) {
+            // We can't read auth.users email from client, so we show name + id
+            setCurrentAdmin({
+              id: profile.id,
+              full_name: profile.full_name,
+              email: "", // Will be shown as "não disponível via client"
+            });
+            break;
+          }
+        }
+      }
+      if (!profiles || profiles.length === 0) {
+        setCurrentAdmin(null);
+      }
+    } catch {
+      setCurrentAdmin(null);
+    }
+    setLoadingAdmin(false);
+  };
 
   const handleNameChange = (v: string) => {
     setName(v);
@@ -60,9 +107,40 @@ export function InstitutionDialog({ open, onOpenChange, institution, onSaved }: 
 
     if (institution) {
       const { error } = await supabase.from("institutions").update(payload).eq("id", institution.id);
+      if (error) {
+        setSaving(false);
+        toast.error(error.message);
+        return;
+      }
+
+      // If new admin data provided, invoke edge function to change admin
+      if (adminEmail.trim() && adminName.trim()) {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(
+          "create-institution-admin",
+          {
+            body: {
+              institution_id: institution.id,
+              admin_email: adminEmail.trim(),
+              admin_name: adminName.trim(),
+            },
+          }
+        );
+
+        if (fnError) {
+          toast.error(`Instituição atualizada, mas erro ao alterar admin: ${fnError.message}`);
+        } else if (fnData?.error) {
+          toast.error(`Instituição atualizada, mas erro ao alterar admin: ${fnData.error}`);
+        } else {
+          const msg = fnData?.is_existing
+            ? "Instituição atualizada e usuário existente vinculado como admin"
+            : "Instituição atualizada e novo admin criado (email de recuperação enviado)";
+          toast.success(msg);
+        }
+      } else {
+        toast.success("Instituição atualizada");
+      }
+
       setSaving(false);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Instituição atualizada");
     } else {
       // Create institution
       const { data: newInst, error } = await supabase
@@ -78,7 +156,6 @@ export function InstitutionDialog({ open, onOpenChange, institution, onSaved }: 
       }
 
       // Create admin user via edge function
-      const { data: session } = await supabase.auth.getSession();
       const { data: fnData, error: fnError } = await supabase.functions.invoke(
         "create-institution-admin",
         {
@@ -128,21 +205,43 @@ export function InstitutionDialog({ open, onOpenChange, institution, onSaved }: 
             <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
           </div>
 
-          {!institution && (
-            <>
-              <div className="border-t pt-4 mt-2">
-                <p className="text-sm font-medium text-muted-foreground mb-3">Administrador da Instituição</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Nome do Admin</Label>
-                <Input value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Nome completo do administrador" />
-              </div>
-              <div className="space-y-2">
-                <Label>Email do Admin</Label>
-                <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@instituicao.com" />
-              </div>
-            </>
+          {/* Admin section */}
+          <div className="border-t pt-4 mt-2">
+            <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <UserCog className="h-4 w-4" />
+              Administrador da Instituição
+            </p>
+          </div>
+
+          {/* Show current admin when editing */}
+          {institution && (
+            <div className="space-y-2">
+              {loadingAdmin ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando admin atual…
+                </div>
+              ) : currentAdmin ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Admin atual:</span>
+                  <Badge variant="secondary">{currentAdmin.full_name || "Sem nome"}</Badge>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum admin vinculado</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Preencha os campos abaixo para vincular/alterar o administrador
+              </p>
+            </div>
           )}
+
+          <div className="space-y-2">
+            <Label>{institution ? "Nome do Novo Admin (opcional)" : "Nome do Admin"}</Label>
+            <Input value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Nome completo do administrador" />
+          </div>
+          <div className="space-y-2">
+            <Label>{institution ? "Email do Novo Admin (opcional)" : "Email do Admin"}</Label>
+            <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@instituicao.com" />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
