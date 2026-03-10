@@ -46,9 +46,10 @@ Deno.serve(async (req) => {
       }
 
       // Create auth user via invite (sends email to set password)
+      const origin = req.headers.get("origin") || "https://id-preview--899820e8-9f41-4d02-805d-45d0357a2e6f.lovable.app";
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: { full_name },
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.supabase.co')}/auth/v1/verify`,
+        redirectTo: `${origin}/reset-password`,
       });
 
       if (authError) {

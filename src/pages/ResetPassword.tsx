@@ -21,7 +21,7 @@ const ResetPassword = () => {
   useEffect(() => {
     // Supabase auto-detects the recovery token from the URL hash
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setHasSession(true);
       }
     });
