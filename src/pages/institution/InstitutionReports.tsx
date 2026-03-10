@@ -31,13 +31,39 @@ const InstitutionReports = () => {
       const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
       if (!instId) return;
 
-      const { data: classes } = await supabase.from("classes").select("id, name").eq("institution_id", instId as string);
+      const { data: classes } = await supabase.from("classes").select("id, name, trail_id").eq("institution_id", instId as string);
       if (!classes) return;
 
       const reports: ClassReport[] = [];
       for (const c of classes) {
         const { data: members } = await supabase.from("class_members").select("user_id").eq("class_id", c.id).eq("role", "student");
-        reports.push({ id: c.id, name: c.name, studentCount: members?.length ?? 0, completionPct: 0 });
+        const studentIds = members?.map(m => m.user_id) ?? [];
+        let completionPct = 0;
+
+        if (c.trail_id && studentIds.length > 0) {
+          // Count total lessons in the trail
+          const { data: modules } = await supabase.from("modules").select("id").eq("trail_id", c.trail_id);
+          const moduleIds = modules?.map(m => m.id) ?? [];
+
+          if (moduleIds.length > 0) {
+            const { data: lessons } = await supabase.from("lessons").select("id").in("module_id", moduleIds);
+            const totalLessons = lessons?.length ?? 0;
+
+            if (totalLessons > 0) {
+              const lessonIds = lessons!.map(l => l.id);
+              const { count } = await supabase
+                .from("lesson_progress")
+                .select("id", { count: "exact", head: true })
+                .in("user_id", studentIds)
+                .in("lesson_id", lessonIds)
+                .eq("completed", true);
+
+              completionPct = Math.round(((count ?? 0) / (totalLessons * studentIds.length)) * 100);
+            }
+          }
+        }
+
+        reports.push({ id: c.id, name: c.name, studentCount: studentIds.length, completionPct });
       }
       setClassReports(reports);
 
