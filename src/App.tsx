@@ -16,6 +16,8 @@ import AdminInstitutions from "./pages/admin/AdminInstitutions";
 import AdminTrails from "./pages/admin/AdminTrails";
 import AdminTrailEditor from "./pages/admin/AdminTrailEditor";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentTrail from "./pages/student/StudentTrail";
+import StudentLesson from "./pages/student/StudentLesson";
 import InstitutionDashboard from "./pages/institution/InstitutionDashboard";
 import InstitutionClasses from "./pages/institution/InstitutionClasses";
 import InstitutionFacilitators from "./pages/institution/InstitutionFacilitators";
