@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { CpfInput } from "@/components/CpfInput";
+import { isValidCpf } from "@/lib/cpf";
 
 interface Props {
   open: boolean;
@@ -18,10 +20,11 @@ export function FacilitatorDialog({ open, onOpenChange, onSaved }: Props) {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [cpf, setCpf] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!email.trim() || !fullName.trim() || !user) return;
+    if (!email.trim() || !fullName.trim() || !isValidCpf(cpf) || !user) return;
     setSaving(true);
     try {
       const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
@@ -30,22 +33,25 @@ export function FacilitatorDialog({ open, onOpenChange, onSaved }: Props) {
         return;
       }
 
-      // Use activate-account edge function pattern — create user via admin
       const response = await supabase.functions.invoke("activate-account", {
         body: {
           action: "create_facilitator",
           email: email.trim(),
           full_name: fullName.trim(),
+          cpf,
           institution_id: instId as string,
         },
       });
 
       if (response.error) {
         toast({ title: "Erro ao criar facilitador", description: String(response.error), variant: "destructive" });
+      } else if (response.data?.error) {
+        toast({ title: "Erro ao criar facilitador", description: response.data.error, variant: "destructive" });
       } else {
         toast({ title: "Facilitador cadastrado com sucesso" });
         setEmail("");
         setFullName("");
+        setCpf("");
         onOpenChange(false);
         onSaved();
       }
@@ -68,13 +74,20 @@ export function FacilitatorDialog({ open, onOpenChange, onSaved }: Props) {
             <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nome do facilitador" />
           </div>
           <div>
+            <Label>CPF</Label>
+            <CpfInput value={cpf} onValueChange={setCpf} />
+            {cpf.length === 11 && !isValidCpf(cpf) && (
+              <p className="text-sm text-destructive mt-1">CPF inválido</p>
+            )}
+          </div>
+          <div>
             <Label>E-mail</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemplo.com" />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving || !email.trim() || !fullName.trim()}>
+          <Button onClick={handleSave} disabled={saving || !email.trim() || !fullName.trim() || !isValidCpf(cpf)}>
             {saving ? "Cadastrando..." : "Cadastrar"}
           </Button>
         </DialogFooter>

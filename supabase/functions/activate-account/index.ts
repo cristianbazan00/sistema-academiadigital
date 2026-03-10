@@ -12,7 +12,73 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { cpf, email, full_name, password } = await req.json();
+    const body = await req.json();
+    const { action } = body;
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // ── CREATE FACILITATOR ──
+    if (action === "create_facilitator") {
+      const { email, full_name, cpf, institution_id } = body;
+
+      if (!email || !full_name || !cpf || !institution_id) {
+        return new Response(
+          JSON.stringify({ error: "Todos os campos são obrigatórios." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if CPF already exists
+      const { data: existingProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("cpf", cpf)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return new Response(
+          JSON.stringify({ error: "Já existe um usuário com este CPF." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create auth user via invite (sends email to set password)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: { full_name },
+        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.supabase.co')}/auth/v1/verify`,
+      });
+
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const userId = authData.user.id;
+
+      // Update profile
+      await supabaseAdmin
+        .from("profiles")
+        .update({ cpf, full_name, institution_id })
+        .eq("id", userId);
+
+      // Assign facilitator role
+      await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: "facilitator" });
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── ACTIVATE STUDENT ACCOUNT ──
+    const { cpf, email, full_name, password } = body;
 
     if (!cpf || !email || !full_name || !password) {
       return new Response(
@@ -29,17 +95,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     // Check if CPF exists in profiles (pre-registered by admin)
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("id, cpf")
       .eq("cpf", cpf)
-      .is("id", null) // No auth user linked yet — for pre-registered profiles
+      .is("id", null)
       .maybeSingle();
 
     // If no pre-registered profile, check if CPF already has an account
@@ -74,7 +135,7 @@ Deno.serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // Update profile with CPF and name (trigger already created the profile row)
+    // Update profile with CPF and name
     await supabaseAdmin
       .from("profiles")
       .update({ cpf, full_name })
