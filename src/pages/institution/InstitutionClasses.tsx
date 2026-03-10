@@ -18,6 +18,8 @@ interface ClassRow {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  trail_id: string | null;
+  trails?: { title: string } | null;
 }
 
 const InstitutionClasses = () => {
