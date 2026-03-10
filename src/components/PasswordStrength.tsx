@@ -23,7 +23,9 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
 
   return (
     <div className="space-y-2">
-      <Progress value={percent} className="h-2" indicatorClassName={color} />
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+        <div className={`h-full transition-all ${color}`} style={{ width: `${percent}%` }} />
+      </div>
       <ul className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
         {rules.map((r) => (
           <li key={r.label} className={r.test(password) ? "text-success font-medium" : ""}>
