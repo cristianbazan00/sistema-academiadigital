@@ -6,7 +6,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, ClipboardList, TrendingUp, Trophy, AlertCircle, Loader2 } from "lucide-react";
+import { Users, BookOpen, ClipboardList, TrendingUp, Trophy, AlertCircle } from "lucide-react";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -83,9 +84,7 @@ const FacilitatorDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <DashboardSkeleton kpiCount={3} sections={2} />
       </DashboardLayout>
     );
   }
