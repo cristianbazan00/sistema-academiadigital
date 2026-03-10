@@ -122,13 +122,11 @@ Deno.serve(async (req) => {
           .insert({ user_id: userId, role: "admin_institution" });
       }
     } else {
-      // Create new user with temporary password
-      const tempPassword = `Temp@${crypto.randomUUID().slice(0, 8)}`;
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: admin_email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: { full_name: admin_name },
+      // Invite new user — sends email automatically with link to set password
+      const origin = req.headers.get("origin") || "https://id-preview--899820e8-9f41-4d02-805d-45d0357a2e6f.lovable.app";
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(admin_email, {
+        data: { full_name: admin_name },
+        redirectTo: `${origin}/reset-password`,
       });
 
       if (authError) {
@@ -150,12 +148,6 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: userId, role: "admin_institution" });
-
-      // Send password reset email so user can set their own password
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email: admin_email,
-      });
     }
 
     return new Response(
