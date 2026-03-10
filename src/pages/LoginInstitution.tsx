@@ -1,18 +1,15 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CpfInput } from "@/components/CpfInput";
-import { isValidCpf } from "@/lib/cpf";
-import { Loader2, Rocket } from "lucide-react";
+import { Building2, Loader2 } from "lucide-react";
 
-const Login = () => {
-  const [cpf, setCpf] = useState("");
+const LoginInstitution = () => {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,22 +19,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (!isValidCpf(cpf)) {
-      setError("CPF inválido.");
-      return;
-    }
-
     setLoading(true);
-
-    // Lookup email by CPF
-    const { data: email, error: rpcError } = await supabase.rpc("get_email_by_cpf", { _cpf: cpf });
-
-    if (rpcError || !email) {
-      setLoading(false);
-      setError("Credenciais inválidas. Tente novamente.");
-      return;
-    }
 
     const { error: signInError } = await signIn(email, password);
     setLoading(false);
@@ -57,16 +39,23 @@ const Login = () => {
       <Card className="w-full max-w-md animate-fade-in border-border/50 shadow-xl">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-            <Rocket className="h-7 w-7 text-primary-foreground" />
+            <Building2 className="h-7 w-7 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-display">Plataforma de Empregabilidade</CardTitle>
-          <CardDescription>Acesso para Facilitadores e Alunos</CardDescription>
+          <CardTitle className="text-2xl font-display">Acesso Institucional</CardTitle>
+          <CardDescription>Entre com o e-mail e senha da sua instituição</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <CpfInput id="cpf" value={cpf} onValueChange={setCpf} />
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="instituicao@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -90,14 +79,8 @@ const Login = () => {
               <Link to="/forgot-password" className="text-primary hover:underline">
                 Esqueci minha senha
               </Link>
-              <Link to="/activate" className="text-primary hover:underline">
-                Ativar minha conta
-              </Link>
-            </div>
-
-            <div className="text-center pt-2 border-t border-border/50">
-              <Link to="/login/institution" className="text-sm text-muted-foreground hover:text-primary hover:underline">
-                Sou Instituição →
+              <Link to="/login" className="text-primary hover:underline">
+                Sou Facilitador/Aluno
               </Link>
             </div>
           </form>
@@ -107,4 +90,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginInstitution;
