@@ -5,9 +5,10 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, RadialBarChart, RadialBar } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Zap, Target } from "lucide-react";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 interface XpPoint {
   date: string;
@@ -27,6 +28,8 @@ const chartConfig = {
 
 const StudentReports = () => {
   const { user } = useAuth();
+  const [startDate, setStartDate] = useState(() => subMonths(new Date(), 3));
+  const [endDate, setEndDate] = useState(() => new Date());
   const [xpEvolution, setXpEvolution] = useState<XpPoint[]>([]);
   const [trailProgress, setTrailProgress] = useState(0);
   const [xpHistory, setXpHistory] = useState<XpLogEntry[]>([]);
@@ -34,11 +37,16 @@ const StudentReports = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      // XP evolution
+      const startIso = startDate.toISOString();
+      const endIso = endDate.toISOString();
+
+      // XP evolution filtered by date range
       const { data: xpLogs } = await supabase
         .from("user_xp_log")
         .select("xp_amount, created_at, reason")
         .eq("user_id", user.id)
+        .gte("created_at", startIso)
+        .lte("created_at", endIso)
         .order("created_at", { ascending: true });
 
       if (xpLogs && xpLogs.length > 0) {
@@ -53,9 +61,12 @@ const StudentReports = () => {
         });
         setXpEvolution(points);
         setXpHistory(xpLogs.slice(-20).reverse() as XpLogEntry[]);
+      } else {
+        setXpEvolution([]);
+        setXpHistory([]);
       }
 
-      // Trail progress - get student's class trail
+      // Trail progress (not date-filtered - shows overall)
       const { data: membership } = await supabase
         .from("class_members")
         .select("class_id")
@@ -92,17 +103,19 @@ const StudentReports = () => {
       }
     };
     load();
-  }, [user]);
+  }, [user, startDate, endDate]);
 
   const radialData = [{ name: "Progresso", value: trailProgress, fill: "hsl(var(--primary))" }];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-display font-bold">Meus Relatórios</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-display font-bold">Meus Relatórios</h1>
+          <DateRangeFilter startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* XP Evolution */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -111,7 +124,7 @@ const StudentReports = () => {
             </CardHeader>
             <CardContent>
               {xpEvolution.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum XP registrado ainda.</p>
+                <p className="text-sm text-muted-foreground">Nenhum XP registrado no período.</p>
               ) : (
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
                   <AreaChart data={xpEvolution}>
@@ -126,7 +139,6 @@ const StudentReports = () => {
             </CardContent>
           </Card>
 
-          {/* Trail Progress */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -145,12 +157,11 @@ const StudentReports = () => {
           </Card>
         </div>
 
-        {/* XP History */}
         <Card>
           <CardHeader><CardTitle>Histórico de XP</CardTitle></CardHeader>
           <CardContent>
             {xpHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum registro.</p>
+              <p className="text-sm text-muted-foreground">Nenhum registro no período.</p>
             ) : (
               <div className="space-y-3">
                 {xpHistory.map((entry, i) => (
