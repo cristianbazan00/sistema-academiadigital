@@ -89,6 +89,7 @@ const App = () => (
                     <AdminReports />
                   </ProtectedRoute>
                 }
+              />
               <Route
                 path="/institution"
                 element={
