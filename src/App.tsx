@@ -72,6 +72,46 @@ const App = () => (
                 }
               />
               <Route
+                path="/institution"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_institution"]}>
+                    <InstitutionDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/classes"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_institution"]}>
+                    <InstitutionClasses />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/facilitators"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_institution"]}>
+                    <InstitutionFacilitators />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/import"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_institution"]}>
+                    <InstitutionImport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin_institution"]}>
+                    <InstitutionReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/student"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>

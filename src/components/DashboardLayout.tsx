@@ -22,6 +22,9 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
   admin_institution: [
     { to: "/institution", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/institution/classes", label: "Turmas", icon: <Users className="h-4 w-4" /> },
+    { to: "/institution/facilitators", label: "Facilitadores", icon: <Users className="h-4 w-4" /> },
+    { to: "/institution/import", label: "Importar Alunos", icon: <GraduationCap className="h-4 w-4" /> },
+    { to: "/institution/reports", label: "Relatórios", icon: <BookOpen className="h-4 w-4" /> },
   ],
   facilitator: [
     { to: "/facilitator", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },

@@ -2,3 +2,6 @@ project_id = "urhzbawrkmyfaotocuqk"
 
 [functions.activate-account]
 verify_jwt = false
+
+[functions.import-students]
+verify_jwt = false
