@@ -18,6 +18,8 @@ interface ClassRow {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  trail_id: string | null;
+  trails?: { title: string } | null;
 }
 
 const InstitutionClasses = () => {
@@ -34,7 +36,7 @@ const InstitutionClasses = () => {
     if (!user) return;
     const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
     if (!instId) return;
-    const { data } = await supabase.from("classes").select("*").eq("institution_id", instId as string).order("created_at", { ascending: false });
+    const { data } = await supabase.from("classes").select("*, trails!fk_classes_trail(title)").eq("institution_id", instId as string).order("created_at", { ascending: false });
     setClasses((data as ClassRow[]) ?? []);
   };
 
@@ -71,17 +73,19 @@ const InstitutionClasses = () => {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Ativa</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableRow>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Trilha</TableHead>
+                     <TableHead>Descrição</TableHead>
+                     <TableHead>Ativa</TableHead>
+                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="text-sm">{c.trails?.title || <span className="text-muted-foreground">Sem trilha</span>}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{c.description || "—"}</TableCell>
                       <TableCell>
                         <Switch checked={c.is_active} onCheckedChange={() => toggleActive(c)} />
