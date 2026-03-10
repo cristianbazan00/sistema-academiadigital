@@ -60,7 +60,7 @@ const Login = () => {
             <Rocket className="h-7 w-7 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-display">Plataforma de Empregabilidade</CardTitle>
-          <CardDescription>Acesse sua conta para continuar</CardDescription>
+          <CardDescription>Acesso para Facilitadores e Alunos</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
