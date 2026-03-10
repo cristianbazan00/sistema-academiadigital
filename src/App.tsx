@@ -16,6 +16,11 @@ import AdminInstitutions from "./pages/admin/AdminInstitutions";
 import AdminTrails from "./pages/admin/AdminTrails";
 import AdminTrailEditor from "./pages/admin/AdminTrailEditor";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import InstitutionDashboard from "./pages/institution/InstitutionDashboard";
+import InstitutionClasses from "./pages/institution/InstitutionClasses";
+import InstitutionFacilitators from "./pages/institution/InstitutionFacilitators";
+import InstitutionImport from "./pages/institution/InstitutionImport";
+import InstitutionReports from "./pages/institution/InstitutionReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
