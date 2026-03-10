@@ -10,16 +10,10 @@ import { Users, BookOpen, ClipboardList, TrendingUp, Trophy } from "lucide-react
 import { subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 
-interface ClassCompletion {
-  name: string;
-  completion: number;
-}
-
-interface StudentXp {
-  full_name: string;
-  xp_total: number;
-  level: number;
-  className: string;
+interface DashboardData {
+  kpis: { classes: number; students: number; extras: number; avg_completion: number };
+  class_completions: { name: string; completion: number }[];
+  student_ranking: { full_name: string; xp_total: number; level: number; class_name: string }[];
 }
 
 const chartConfig = {
@@ -31,112 +25,28 @@ const FacilitatorDashboard = () => {
   const { user, profile } = useAuth();
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 3));
   const [endDate, setEndDate] = useState(() => new Date());
-  const [counts, setCounts] = useState({ classes: 0, students: 0, extras: 0, completion: 0 });
-  const [classCompletions, setClassCompletions] = useState<ClassCompletion[]>([]);
-  const [studentRanking, setStudentRanking] = useState<StudentXp[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const startIso = startDate.toISOString();
-      const endIso = endDate.toISOString();
-
-      const { data: memberships } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", user.id)
-        .eq("role", "facilitator");
-
-      if (!memberships || memberships.length === 0) {
-        setCounts({ classes: 0, students: 0, extras: 0, completion: 0 });
-        return;
-      }
-      const classIds = memberships.map((m) => m.class_id);
-
-      const { data: classes } = await supabase
-        .from("classes")
-        .select("id, name, trail_id")
-        .in("id", classIds);
-
-      if (!classes) return;
-
-      const completions: ClassCompletion[] = [];
-      const allStudents: StudentXp[] = [];
-      let totalStudentCount = 0;
-
-      for (const cls of classes) {
-        const { data: members } = await supabase
-          .from("class_members")
-          .select("user_id")
-          .eq("class_id", cls.id)
-          .eq("role", "student");
-
-        const studentIds = members?.map((m) => m.user_id) ?? [];
-        totalStudentCount += studentIds.length;
-        if (studentIds.length === 0) {
-          completions.push({ name: cls.name, completion: 0 });
-          continue;
-        }
-
-        let completionPct = 0;
-        if (cls.trail_id) {
-          const { data: modules } = await supabase.from("modules").select("id").eq("trail_id", cls.trail_id);
-          const moduleIds = modules?.map((m) => m.id) ?? [];
-          if (moduleIds.length > 0) {
-            const { data: lessons } = await supabase.from("lessons").select("id").in("module_id", moduleIds);
-            const totalLessons = lessons?.length ?? 0;
-            if (totalLessons > 0) {
-              const lessonIds = lessons!.map((l) => l.id);
-              const { count } = await supabase
-                .from("lesson_progress")
-                .select("id", { count: "exact", head: true })
-                .in("user_id", studentIds)
-                .in("lesson_id", lessonIds)
-                .eq("completed", true)
-                .gte("completed_at", startIso)
-                .lte("completed_at", endIso);
-              completionPct = Math.round(((count ?? 0) / (totalLessons * studentIds.length)) * 100);
-            }
-          }
-        }
-        completions.push({ name: cls.name, completion: completionPct });
-
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("full_name, xp_total, level")
-          .in("id", studentIds);
-        if (profiles) {
-          profiles.forEach((p) => allStudents.push({ ...p, className: cls.name }));
-        }
-      }
-
-      // Extra activities
-      const { count: extrasCount } = await supabase
-        .from("extra_activities")
-        .select("id", { count: "exact", head: true })
-        .eq("created_by", user.id);
-
-      const avgCompletion = completions.length > 0
-        ? Math.round(completions.reduce((sum, c) => sum + c.completion, 0) / completions.length)
-        : 0;
-
-      setCounts({
-        classes: classIds.length,
-        students: totalStudentCount,
-        extras: extrasCount ?? 0,
-        completion: avgCompletion,
+      const { data: result } = await supabase.rpc("get_facilitator_dashboard_data", {
+        _user_id: user.id,
+        _start_date: startDate.toISOString(),
+        _end_date: endDate.toISOString(),
       });
-      setClassCompletions(completions);
-      setStudentRanking(allStudents.sort((a, b) => b.xp_total - a.xp_total));
+      if (result) setData(result as unknown as DashboardData);
     };
     load();
   }, [user, startDate, endDate]);
 
+  const kpis = data?.kpis ?? { classes: 0, students: 0, extras: 0, avg_completion: 0 };
+
   const stats = [
-    { label: "Minhas Turmas", value: counts.classes, icon: BookOpen, color: "text-blue-500" },
-    { label: "Alunos", value: counts.students, icon: Users, color: "text-green-500" },
-    { label: "Atividades Extras", value: counts.extras, icon: ClipboardList, color: "text-orange-500" },
-    { label: "Conclusão Média", value: `${counts.completion}%`, icon: TrendingUp, color: "text-purple-500" },
+    { label: "Minhas Turmas", value: kpis.classes, icon: BookOpen, color: "text-primary" },
+    { label: "Alunos", value: kpis.students, icon: Users, color: "text-primary" },
+    { label: "Atividades Extras", value: kpis.extras, icon: ClipboardList, color: "text-primary" },
+    { label: "Conclusão Média", value: `${kpis.avg_completion}%`, icon: TrendingUp, color: "text-primary" },
   ];
 
   return (
@@ -169,11 +79,11 @@ const FacilitatorDashboard = () => {
         <Card>
           <CardHeader><CardTitle>Conclusão por Turma</CardTitle></CardHeader>
           <CardContent>
-            {classCompletions.length === 0 ? (
+            {(data?.class_completions ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma turma encontrada.</p>
             ) : (
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <BarChart data={classCompletions}>
+                <BarChart data={data!.class_completions}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis domain={[0, 100]} />
@@ -192,12 +102,12 @@ const FacilitatorDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {studentRanking.length === 0 ? (
+            {(data?.student_ranking ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
               <>
                 <ChartContainer config={chartConfig} className="h-[300px] w-full mb-6">
-                  <BarChart data={studentRanking.slice(0, 10)} layout="vertical">
+                  <BarChart data={data!.student_ranking.slice(0, 10)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
                     <YAxis dataKey="full_name" type="category" width={120} tick={{ fontSize: 12 }} />
@@ -216,11 +126,11 @@ const FacilitatorDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {studentRanking.map((s, i) => (
+                    {data!.student_ranking.map((s, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-bold">{i + 1}</TableCell>
                         <TableCell>{s.full_name}</TableCell>
-                        <TableCell>{s.className}</TableCell>
+                        <TableCell>{s.class_name}</TableCell>
                         <TableCell>{s.level}</TableCell>
                         <TableCell className="font-mono">{s.xp_total}</TableCell>
                       </TableRow>

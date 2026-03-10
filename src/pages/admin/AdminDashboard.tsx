@@ -6,16 +6,23 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Users, BookOpen, TrendingUp } from "lucide-react";
-import { format, subMonths, startOfMonth, eachMonthOfInterval } from "date-fns";
+import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 
-interface InstitutionStudents { name: string; students: number; }
-interface MonthlyGrowth { month: string; count: number; }
-interface RoleDistribution { name: string; value: number; }
-interface TopStudent { full_name: string; xp_total: number; level: number; }
+interface DashboardData {
+  kpis: { institutions: number; students: number; trails: number; completion_pct: number };
+  students_per_institution: { name: string; students: number }[];
+  monthly_growth: { month: string; count: number }[];
+  roles_distribution: { role: string; count: number }[];
+  top_students: { full_name: string; xp_total: number; level: number }[];
+}
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))", "hsl(var(--destructive))"];
+
+const roleNames: Record<string, string> = {
+  admin_master: "Admin", admin_institution: "Instituição", facilitator: "Facilitador", student: "Aluno",
+};
 
 const chartConfig = {
   students: { label: "Alunos", color: "hsl(var(--primary))" },
@@ -25,103 +32,34 @@ const chartConfig = {
 const AdminDashboard = () => {
   const [startDate, setStartDate] = useState(() => subMonths(new Date(), 6));
   const [endDate, setEndDate] = useState(() => new Date());
-  const [kpis, setKpis] = useState({ institutions: 0, students: 0, trails: 0, completion: 0 });
-  const [instStudents, setInstStudents] = useState<InstitutionStudents[]>([]);
-  const [monthlyGrowth, setMonthlyGrowth] = useState<MonthlyGrowth[]>([]);
-  const [rolesDist, setRolesDist] = useState<RoleDistribution[]>([]);
-  const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const startIso = startDate.toISOString();
-      const endIso = endDate.toISOString();
-
-      const [{ count: instCount }, { count: studentCount }, { count: trailCount }] = await Promise.all([
-        supabase.from("institutions").select("id", { count: "exact", head: true }),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "student"),
-        supabase.from("trails").select("id", { count: "exact", head: true }),
-      ]);
-
-      const { count: totalProgress } = await supabase
-        .from("lesson_progress")
-        .select("id", { count: "exact", head: true })
-        .gte("completed_at", startIso)
-        .lte("completed_at", endIso);
-      const { count: completedProgress } = await supabase
-        .from("lesson_progress")
-        .select("id", { count: "exact", head: true })
-        .eq("completed", true)
-        .gte("completed_at", startIso)
-        .lte("completed_at", endIso);
-      const completion = totalProgress ? Math.round(((completedProgress ?? 0) / totalProgress) * 100) : 0;
-
-      setKpis({ institutions: instCount ?? 0, students: studentCount ?? 0, trails: trailCount ?? 0, completion });
-
-      const { data: institutions } = await supabase.from("institutions").select("id, name");
-      if (institutions) {
-        const results: InstitutionStudents[] = [];
-        for (const inst of institutions.slice(0, 10)) {
-          const { count } = await supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true })
-            .eq("institution_id", inst.id)
-            .gte("created_at", startIso)
-            .lte("created_at", endIso);
-          results.push({ name: inst.name, students: count ?? 0 });
-        }
-        setInstStudents(results.sort((a, b) => b.students - a.students));
-      }
-
-      const monthStarts = eachMonthOfInterval({ start: startOfMonth(startDate), end: endDate });
-      const months: MonthlyGrowth[] = [];
-      for (let i = 0; i < monthStarts.length; i++) {
-        const mStart = monthStarts[i];
-        const mEnd = i + 1 < monthStarts.length ? monthStarts[i + 1] : endDate;
-        const { count } = await supabase
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", mStart.toISOString())
-          .lt("created_at", mEnd.toISOString());
-        months.push({ month: format(mStart, "MMM yy", { locale: ptBR }), count: count ?? 0 });
-      }
-      setMonthlyGrowth(months);
-
-      const roleNames: Record<string, string> = {
-        admin_master: "Admin", admin_institution: "Instituição", facilitator: "Facilitador", student: "Aluno",
-      };
-      const { data: roles } = await supabase.from("user_roles").select("role");
-      if (roles) {
-        const counts: Record<string, number> = {};
-        roles.forEach((r) => { counts[r.role] = (counts[r.role] || 0) + 1; });
-        setRolesDist(Object.entries(counts).map(([k, v]) => ({ name: roleNames[k] || k, value: v })));
-      }
-
-      // Fetch only student IDs to filter the ranking
-      const { data: studentRoles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "student");
-      const studentIds = studentRoles?.map((r) => r.user_id) ?? [];
-      if (studentIds.length > 0) {
-        const { data: top } = await supabase
-          .from("profiles")
-          .select("full_name, xp_total, level")
-          .in("id", studentIds)
-          .order("xp_total", { ascending: false })
-          .limit(20);
-        setTopStudents((top as TopStudent[]) ?? []);
-      } else {
-        setTopStudents([]);
-      }
+      const { data: result } = await supabase.rpc("get_admin_dashboard_data", {
+        _start_date: startDate.toISOString(),
+        _end_date: endDate.toISOString(),
+      });
+      if (result) setData(result as unknown as DashboardData);
     };
     load();
   }, [startDate, endDate]);
+
+  const kpis = data?.kpis ?? { institutions: 0, students: 0, trails: 0, completion_pct: 0 };
+  const monthlyFormatted = (data?.monthly_growth ?? []).map((m) => ({
+    ...m,
+    month: format(parseISO(m.month), "MMM yy", { locale: ptBR }),
+  }));
+  const rolesFormatted = (data?.roles_distribution ?? []).map((r) => ({
+    name: roleNames[r.role] || r.role,
+    value: r.count,
+  }));
 
   const kpiCards = [
     { label: "Instituições", value: kpis.institutions, icon: Building2, color: "text-primary" },
     { label: "Alunos", value: kpis.students, icon: Users, color: "text-primary" },
     { label: "Trilhas", value: kpis.trails, icon: BookOpen, color: "text-primary" },
-    { label: "Taxa de Conclusão", value: `${kpis.completion}%`, icon: TrendingUp, color: "text-primary" },
+    { label: "Taxa de Conclusão", value: `${kpis.completion_pct}%`, icon: TrendingUp, color: "text-primary" },
   ];
 
   return (
@@ -153,11 +91,11 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader><CardTitle>Alunos por Instituição</CardTitle></CardHeader>
             <CardContent>
-              {instStudents.length === 0 ? (
+              {(data?.students_per_institution ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem dados.</p>
               ) : (
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                  <BarChart data={instStudents}>
+                  <BarChart data={data!.students_per_institution}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis />
@@ -172,11 +110,11 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader><CardTitle>Novos Alunos por Mês</CardTitle></CardHeader>
             <CardContent>
-              {monthlyGrowth.length === 0 ? (
+              {monthlyFormatted.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem dados.</p>
               ) : (
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                  <LineChart data={monthlyGrowth}>
+                  <LineChart data={monthlyFormatted}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -192,14 +130,14 @@ const AdminDashboard = () => {
         <Card>
           <CardHeader><CardTitle>Distribuição de Papéis</CardTitle></CardHeader>
           <CardContent className="flex justify-center">
-            {rolesDist.length === 0 ? (
+            {rolesFormatted.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
               <ChartContainer config={chartConfig} className="h-[300px] w-[400px]">
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie data={rolesDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                    {rolesDist.map((_, i) => (
+                  <Pie data={rolesFormatted} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                    {rolesFormatted.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
@@ -212,7 +150,7 @@ const AdminDashboard = () => {
         <Card>
           <CardHeader><CardTitle>Top 20 Alunos por XP</CardTitle></CardHeader>
           <CardContent>
-            {topStudents.length === 0 ? (
+            {(data?.top_students ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
               <Table>
@@ -225,7 +163,7 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topStudents.map((s, i) => (
+                  {data!.top_students.map((s, i) => (
                     <TableRow key={i}>
                       <TableCell className="font-bold">{i + 1}</TableCell>
                       <TableCell>{s.full_name}</TableCell>
