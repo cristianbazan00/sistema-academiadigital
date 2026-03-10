@@ -20,6 +20,7 @@ interface ClassRow {
   created_at: string;
   trail_id: string | null;
   trails?: { title: string } | null;
+  facilitators: string[];
 }
 
 const InstitutionClasses = () => {
@@ -37,7 +38,29 @@ const InstitutionClasses = () => {
     const { data: instId } = await supabase.rpc("get_user_institution_id", { _user_id: user.id });
     if (!instId) return;
     const { data } = await supabase.from("classes").select("*, trails!fk_classes_trail(title)").eq("institution_id", instId as string).order("created_at", { ascending: false });
-    setClasses((data as ClassRow[]) ?? []);
+    const classList = (data ?? []) as (Omit<ClassRow, "facilitators">)[];
+
+    // Fetch facilitators for all classes
+    const classIds = classList.map((c) => c.id);
+    let facMap = new Map<string, string[]>();
+    if (classIds.length > 0) {
+      const { data: members } = await supabase
+        .from("class_members")
+        .select("class_id, user_id")
+        .in("class_id", classIds)
+        .eq("role", "facilitator" as any);
+      if (members && members.length > 0) {
+        const facIds = [...new Set(members.map((m) => m.user_id))];
+        const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", facIds);
+        const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+        for (const m of members) {
+          const name = nameMap.get(m.user_id) ?? "—";
+          facMap.set(m.class_id, [...(facMap.get(m.class_id) ?? []), name]);
+        }
+      }
+    }
+
+    setClasses(classList.map((c) => ({ ...c, facilitators: facMap.get(c.id) ?? [] })));
   };
 
   useEffect(() => { fetchClasses(); }, [user]);
@@ -76,6 +99,7 @@ const InstitutionClasses = () => {
                     <TableRow>
                      <TableHead>Nome</TableHead>
                      <TableHead>Trilha</TableHead>
+                     <TableHead>Facilitador</TableHead>
                      <TableHead>Descrição</TableHead>
                      <TableHead>Ativa</TableHead>
                      <TableHead>Ações</TableHead>
@@ -86,6 +110,11 @@ const InstitutionClasses = () => {
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell className="text-sm">{c.trails?.title || <span className="text-muted-foreground">Sem trilha</span>}</TableCell>
+                      <TableCell className="text-sm">
+                        {c.facilitators.length > 0
+                          ? c.facilitators.join(", ")
+                          : <span className="text-muted-foreground">Nenhum</span>}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{c.description || "—"}</TableCell>
                       <TableCell>
                         <Switch checked={c.is_active} onCheckedChange={() => toggleActive(c)} />
@@ -105,7 +134,7 @@ const InstitutionClasses = () => {
         </Card>
 
         <ClassDialog open={dialogOpen} onOpenChange={setDialogOpen} classData={editClass} onSaved={fetchClasses} />
-        <ClassMembersDialog open={membersOpen} onOpenChange={setMembersOpen} classId={selectedClass?.id ?? null} className={selectedClass?.name ?? ""} />
+        <ClassMembersDialog open={membersOpen} onOpenChange={(v) => { setMembersOpen(v); if (!v) fetchClasses(); }} classId={selectedClass?.id ?? null} className={selectedClass?.name ?? ""} />
       </div>
     </DashboardLayout>
   );
