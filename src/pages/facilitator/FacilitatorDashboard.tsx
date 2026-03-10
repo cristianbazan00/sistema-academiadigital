@@ -6,7 +6,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, ClipboardList, TrendingUp, Trophy, AlertCircle, Loader2 } from "lucide-react";
+import { Users, BookOpen, ClipboardList, TrendingUp, Trophy, AlertCircle } from "lucide-react";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
