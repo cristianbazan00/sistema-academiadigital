@@ -85,6 +85,7 @@ const InstitutionClasses = () => {
                   {filtered.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="text-sm">{c.trails?.title || <span className="text-muted-foreground">Sem trilha</span>}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{c.description || "—"}</TableCell>
                       <TableCell>
                         <Switch checked={c.is_active} onCheckedChange={() => toggleActive(c)} />
