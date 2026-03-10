@@ -65,9 +65,12 @@ const ResetPassword = () => {
             <CardTitle className="text-2xl font-display">Senha Redefinida!</CardTitle>
             <CardDescription>Sua senha foi alterada com sucesso.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Button className="w-full font-semibold" onClick={() => navigate("/login")}>
               Ir para o Login
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/login/institution")}>
+              Acesso Institucional
             </Button>
           </CardContent>
         </Card>
