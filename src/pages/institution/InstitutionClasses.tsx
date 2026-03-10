@@ -73,11 +73,12 @@ const InstitutionClasses = () => {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Ativa</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableRow>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Trilha</TableHead>
+                     <TableHead>Descrição</TableHead>
+                     <TableHead>Ativa</TableHead>
+                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
