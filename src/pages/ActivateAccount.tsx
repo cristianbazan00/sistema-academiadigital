@@ -12,10 +12,8 @@ import { isValidCpf } from "@/lib/cpf";
 import { Loader2, Rocket, CheckCircle } from "lucide-react";
 
 const ActivateAccount = () => {
-  const [step, setStep] = useState<"cpf" | "form" | "done">("cpf");
+  const [step, setStep] = useState<"cpf" | "password" | "done">("cpf");
   const [cpf, setCpf] = useState("");
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,19 +30,21 @@ const ActivateAccount = () => {
 
     setLoading(true);
 
-    // Check if CPF exists and account is not yet activated
-    const { data: existingEmail } = await supabase.rpc("get_email_by_cpf", { _cpf: cpf });
+    const { data: email } = await supabase.rpc("get_email_by_cpf", { _cpf: cpf });
 
-    if (existingEmail) {
-      setLoading(false);
+    setLoading(false);
+
+    if (!email) {
+      setError("CPF não encontrado. Contate sua instituição para ser cadastrado.");
+      return;
+    }
+
+    if (!email.endsWith("@aluno.plataforma.local")) {
       setError("Esta conta já foi ativada. Faça login com seu CPF.");
       return;
     }
 
-    // Check if CPF is pre-registered in profiles (without auth user)
-    // For pre-registered students, there should be a profile row with this CPF but no auth user
-    setLoading(false);
-    setStep("form");
+    setStep("password");
   };
 
   const handleActivate = async (e: React.FormEvent) => {
@@ -65,7 +65,7 @@ const ActivateAccount = () => {
 
     try {
       const res = await supabase.functions.invoke("activate-account", {
-        body: { cpf, email, full_name: fullName, password },
+        body: { action: "activate_csv_student", cpf, password },
       });
 
       if (res.error) {
@@ -98,7 +98,7 @@ const ActivateAccount = () => {
             </div>
             <CardTitle className="text-2xl font-display">Conta Ativada!</CardTitle>
             <CardDescription>
-              Sua conta foi criada com sucesso. Agora você pode fazer login.
+              Sua conta foi ativada com sucesso. Agora você pode fazer login com seu CPF e a nova senha.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,7 +126,7 @@ const ActivateAccount = () => {
           <CardDescription>
             {step === "cpf"
               ? "Digite o CPF cadastrado pela sua instituição"
-              : "Complete seus dados para ativar a conta"}
+              : "Defina sua senha de acesso"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,28 +149,7 @@ const ActivateAccount = () => {
           ) : (
             <form onSubmit={handleActivate} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nome completo</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  maxLength={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  maxLength={255}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">Nova senha</Label>
                 <Input
                   id="password"
                   type="password"
@@ -195,7 +174,7 @@ const ActivateAccount = () => {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ativar Conta"}
               </Button>
               <div className="text-center text-sm">
-                <button type="button" onClick={() => setStep("cpf")} className="text-primary hover:underline">
+                <button type="button" onClick={() => { setStep("cpf"); setError(""); }} className="text-primary hover:underline">
                   Voltar
                 </button>
               </div>

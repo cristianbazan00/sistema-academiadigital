@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if CPF already exists
       const { data: existingProfile } = await supabaseAdmin
         .from("profiles")
         .select("id")
@@ -45,7 +44,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Create auth user via invite (sends email to set password)
       const origin = req.headers.get("origin") || "https://id-preview--899820e8-9f41-4d02-805d-45d0357a2e6f.lovable.app";
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: { full_name },
@@ -61,13 +59,11 @@ Deno.serve(async (req) => {
 
       const userId = authData.user.id;
 
-      // Update profile
       await supabaseAdmin
         .from("profiles")
         .update({ cpf, full_name, institution_id })
         .eq("id", userId);
 
-      // Assign facilitator role
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: userId, role: "facilitator" });
@@ -78,77 +74,77 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── ACTIVATE STUDENT ACCOUNT ──
-    const { cpf, email, full_name, password } = body;
+    // ── ACTIVATE CSV STUDENT ──
+    if (action === "activate_csv_student") {
+      const { cpf, password } = body;
 
-    if (!cpf || !email || !full_name || !password) {
+      if (!cpf || !password) {
+        return new Response(
+          JSON.stringify({ error: "CPF e senha são obrigatórios." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate password strength
+      if (password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        return new Response(
+          JSON.stringify({ error: "A senha não atende aos requisitos mínimos." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Find profile by CPF
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("cpf", cpf)
+        .maybeSingle();
+
+      if (!profile) {
+        return new Response(
+          JSON.stringify({ error: "CPF não encontrado." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get auth user to confirm CSV-imported (fictitious email)
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+
+      if (authError || !authUser?.user) {
+        return new Response(
+          JSON.stringify({ error: "Usuário não encontrado." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const email = authUser.user.email || "";
+      if (!email.endsWith("@aluno.plataforma.local")) {
+        return new Response(
+          JSON.stringify({ error: "Esta conta já foi ativada." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update password
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(profile.id, {
+        password,
+      });
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: "Todos os campos são obrigatórios." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Validate password strength server-side
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-      return new Response(
-        JSON.stringify({ error: "A senha não atende aos requisitos mínimos." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if CPF exists in profiles (pre-registered by admin)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id, cpf")
-      .eq("cpf", cpf)
-      .is("id", null)
-      .maybeSingle();
-
-    // If no pre-registered profile, check if CPF already has an account
-    const { data: existingProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("cpf", cpf)
-      .not("id", "is", null)
-      .maybeSingle();
-
-    if (existingProfile) {
-      return new Response(
-        JSON.stringify({ error: "Esta conta já foi ativada." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create auth user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
-
-    if (authError) {
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = authData.user.id;
-
-    // Update profile with CPF and name
-    await supabaseAdmin
-      .from("profiles")
-      .update({ cpf, full_name })
-      .eq("id", userId);
-
-    // Assign student role
-    await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: userId, role: "student" });
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ error: "Ação não reconhecida." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
