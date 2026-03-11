@@ -6,19 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { FacilitatorDialog } from "@/components/institution/FacilitatorDialog";
+import { ManageFacilitatorClassesDialog } from "@/components/institution/ManageFacilitatorClassesDialog";
+
+interface FacilitatorClass {
+  id: string;
+  name: string;
+}
 
 interface Facilitator {
   id: string;
   full_name: string;
-  classes: string[];
+  classes: FacilitatorClass[];
 }
 
 const InstitutionFacilitators = () => {
   const { user } = useAuth();
   const [facilitators, setFacilitators] = useState<Facilitator[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [selectedFacilitator, setSelectedFacilitator] = useState<Facilitator | null>(null);
 
   const fetchFacilitators = async () => {
     if (!user) return;
@@ -40,16 +48,16 @@ const InstitutionFacilitators = () => {
     const profileIds = profiles.map((p) => p.id);
     const { data: members } = await supabase
       .from("class_members")
-      .select("user_id, classes(name)")
+      .select("user_id, classes(id, name)")
       .eq("role", "facilitator")
       .in("user_id", profileIds);
 
-    const classMap: Record<string, string[]> = {};
+    const classMap: Record<string, FacilitatorClass[]> = {};
     (members ?? []).forEach((m: any) => {
-      const name = m.classes?.name;
-      if (!name) return;
+      const cls = m.classes;
+      if (!cls?.id) return;
       if (!classMap[m.user_id]) classMap[m.user_id] = [];
-      classMap[m.user_id].push(name);
+      classMap[m.user_id].push({ id: cls.id, name: cls.name });
     });
 
     setFacilitators(
@@ -58,6 +66,11 @@ const InstitutionFacilitators = () => {
   };
 
   useEffect(() => { fetchFacilitators(); }, [user]);
+
+  const openManage = (f: Facilitator) => {
+    setSelectedFacilitator(f);
+    setManageOpen(true);
+  };
 
   return (
     <DashboardLayout>
@@ -80,6 +93,7 @@ const InstitutionFacilitators = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Turmas</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -92,10 +106,15 @@ const InstitutionFacilitators = () => {
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {f.classes.map((c) => (
-                              <Badge key={c} variant="secondary">{c}</Badge>
+                              <Badge key={c.id} variant="secondary">{c.name}</Badge>
                             ))}
                           </div>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => openManage(f)} title="Gerenciar turmas">
+                          <Settings className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -106,6 +125,13 @@ const InstitutionFacilitators = () => {
         </Card>
 
         <FacilitatorDialog open={dialogOpen} onOpenChange={setDialogOpen} onSaved={fetchFacilitators} />
+        <ManageFacilitatorClassesDialog
+          open={manageOpen}
+          onOpenChange={setManageOpen}
+          facilitatorId={selectedFacilitator?.id ?? null}
+          facilitatorName={selectedFacilitator?.full_name ?? ""}
+          onSaved={fetchFacilitators}
+        />
       </div>
     </DashboardLayout>
   );
