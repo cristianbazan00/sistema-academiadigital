@@ -34,7 +34,6 @@ const navByRole: Record<string, { to: string; label: string; icon: ReactNode }[]
   student: [
     { to: "/student", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/student/trail", label: "Minha Trilha", icon: <GraduationCap className="h-4 w-4" /> },
-    { to: "/student/badges", label: "Conquistas", icon: <BookOpen className="h-4 w-4" /> },
     { to: "/student/reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" /> },
   ],
 };
