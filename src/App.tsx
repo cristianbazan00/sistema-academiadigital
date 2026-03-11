@@ -153,14 +153,6 @@ const App = () => (
                 }
               />
               <Route
-                path="/student/badges"
-                element={
-                  <ProtectedRoute allowedRoles={["student"]}>
-                    <StudentDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/student/reports"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
