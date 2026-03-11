@@ -85,7 +85,8 @@ const StudentDashboard = () => {
             Olá, {profile?.full_name || "Aluno"}! 👋
           </h1>
           <p className="text-muted-foreground mt-1">
-</p>
+            Mantenha a sua jornada ativa, cumpra todos os módulos e ganhe todas as conquistas!
+          </p>
         </div>
 
         {/* XP & Level */}
