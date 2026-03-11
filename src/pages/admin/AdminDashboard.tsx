@@ -3,9 +3,9 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, BookOpen, TrendingUp, AlertCircle } from "lucide-react";
+import { Building2, Users, BookOpen, TrendingUp, AlertCircle, UserCheck } from "lucide-react";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { format, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -14,22 +14,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 interface DashboardData {
-  kpis: { institutions: number; students: number; trails: number; completion_pct: number };
+  kpis: { institutions: number; students: number; facilitators: number; trails: number; completion_pct: number };
   students_per_institution: { name: string; students: number }[];
   monthly_growth: { month: string; count: number }[];
-  roles_distribution: { role: string; count: number }[];
+  classes_per_institution: { name: string; classes: number }[];
   top_students: { full_name: string; xp_total: number; level: number }[];
 }
-
-const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))", "hsl(var(--destructive))"];
-
-const roleNames: Record<string, string> = {
-  admin_master: "Admin", admin_institution: "Instituição", facilitator: "Facilitador", student: "Aluno",
-};
 
 const chartConfig = {
   students: { label: "Alunos", color: "hsl(var(--primary))" },
   count: { label: "Novos alunos", color: "hsl(var(--primary))" },
+  classes: { label: "Turmas", color: "hsl(var(--accent))" },
 };
 
 const AdminDashboard = () => {
@@ -59,19 +54,16 @@ const AdminDashboard = () => {
     loadData();
   }, [startDate, endDate]);
 
-  const kpis = data?.kpis ?? { institutions: 0, students: 0, trails: 0, completion_pct: 0 };
+  const kpis = data?.kpis ?? { institutions: 0, students: 0, facilitators: 0, trails: 0, completion_pct: 0 };
   const monthlyFormatted = (data?.monthly_growth ?? []).map((m) => ({
     ...m,
     month: format(parseISO(m.month), "MMM yy", { locale: ptBR }),
-  }));
-  const rolesFormatted = (data?.roles_distribution ?? []).map((r) => ({
-    name: roleNames[r.role] || r.role,
-    value: r.count,
   }));
 
   const kpiCards = [
     { label: "Instituições", value: kpis.institutions, icon: Building2, color: "text-primary" },
     { label: "Alunos", value: kpis.students, icon: Users, color: "text-primary" },
+    { label: "Facilitadores", value: kpis.facilitators, icon: UserCheck, color: "text-primary" },
     { label: "Trilhas", value: kpis.trails, icon: BookOpen, color: "text-primary" },
     { label: "Taxa de Conclusão", value: `${kpis.completion_pct}%`, icon: TrendingUp, color: "text-primary" },
   ];
@@ -97,7 +89,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <DashboardSkeleton kpiCount={4} sections={4} />
+        <DashboardSkeleton kpiCount={5} sections={4} />
       </DashboardLayout>
     );
   }
@@ -113,7 +105,7 @@ const AdminDashboard = () => {
           <DateRangeFilter startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {kpiCards.map((k) => (
             <Card key={k.label}>
               <CardContent className="p-6 flex items-center gap-4">
@@ -168,20 +160,19 @@ const AdminDashboard = () => {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Distribuição de Papéis</CardTitle></CardHeader>
-          <CardContent className="flex justify-center">
-            {rolesFormatted.length === 0 ? (
+          <CardHeader><CardTitle>Turmas por Instituição</CardTitle></CardHeader>
+          <CardContent>
+            {(data?.classes_per_institution ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-              <ChartContainer config={chartConfig} className="h-[300px] w-[400px]">
-                <PieChart>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart data={data!.classes_per_institution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie data={rolesFormatted} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                    {rolesFormatted.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
+                  <Bar dataKey="classes" fill="var(--color-classes)" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ChartContainer>
             )}
           </CardContent>
