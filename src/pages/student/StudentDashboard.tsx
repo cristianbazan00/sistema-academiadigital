@@ -15,7 +15,7 @@ const StudentDashboard = () => {
   const xp = profile?.xp_total ?? 0;
   const level = profile?.level ?? 1;
   const xpForNext = level * 200;
-  const progress = Math.min((xp / xpForNext) * 100, 100);
+  const progress = Math.min(xp / xpForNext * 100, 100);
 
   const [trailProgress, setTrailProgress] = useState({ completed: 0, total: 0 });
   const [hasTrail, setHasTrail] = useState(false);
@@ -24,45 +24,45 @@ const StudentDashboard = () => {
     if (!user) return;
 
     const load = async () => {
-      const { data: memberships } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", user.id)
-        .eq("role", "student");
+      const { data: memberships } = await supabase.
+      from("class_members").
+      select("class_id").
+      eq("user_id", user.id).
+      eq("role", "student");
 
       if (!memberships?.length) return;
 
       const classIds = memberships.map((m) => m.class_id);
-      const { data: classes } = await supabase
-        .from("classes")
-        .select("trail_id")
-        .in("id", classIds)
-        .not("trail_id", "is", null)
-        .limit(1);
+      const { data: classes } = await supabase.
+      from("classes").
+      select("trail_id").
+      in("id", classIds).
+      not("trail_id", "is", null).
+      limit(1);
 
       const trailId = classes?.[0]?.trail_id;
       if (!trailId) return;
       setHasTrail(true);
 
-      const { data: mods } = await supabase
-        .from("modules")
-        .select("id")
-        .eq("trail_id", trailId);
+      const { data: mods } = await supabase.
+      from("modules").
+      select("id").
+      eq("trail_id", trailId);
 
       if (!mods?.length) return;
 
-      const { data: lessons } = await supabase
-        .from("lessons")
-        .select("id")
-        .in("module_id", mods.map((m) => m.id));
+      const { data: lessons } = await supabase.
+      from("lessons").
+      select("id").
+      in("module_id", mods.map((m) => m.id));
 
       const total = lessons?.length ?? 0;
 
-      const { data: prog } = await supabase
-        .from("lesson_progress")
-        .select("lesson_id")
-        .eq("user_id", user.id)
-        .eq("completed", true);
+      const { data: prog } = await supabase.
+      from("lesson_progress").
+      select("lesson_id").
+      eq("user_id", user.id).
+      eq("completed", true);
 
       const lessonIds = new Set(lessons?.map((l) => l.id) || []);
       const completed = (prog || []).filter((p) => lessonIds.has(p.lesson_id)).length;
@@ -73,9 +73,9 @@ const StudentDashboard = () => {
     load();
   }, [user]);
 
-  const trailPct = trailProgress.total > 0
-    ? Math.round((trailProgress.completed / trailProgress.total) * 100)
-    : 0;
+  const trailPct = trailProgress.total > 0 ?
+  Math.round(trailProgress.completed / trailProgress.total * 100) :
+  0;
 
   return (
     <DashboardLayout>
@@ -84,7 +84,8 @@ const StudentDashboard = () => {
           <h1 className="text-3xl font-display font-bold">
             Olá, {profile?.full_name || "Aluno"}! 👋
           </h1>
-          <p className="text-muted-foreground mt-1">Continue sua jornada de empregabilidade</p>
+          <p className="text-muted-foreground mt-1">
+</p>
         </div>
 
         {/* XP & Level */}
@@ -108,8 +109,7 @@ const StudentDashboard = () => {
               <CardTitle className="text-base">Minha Trilha</CardTitle>
             </CardHeader>
             <CardContent>
-              {hasTrail ? (
-                <div className="space-y-3">
+              {hasTrail ? <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Progresso</span>
                     <span className="font-medium">{trailPct}%</span>
@@ -121,12 +121,12 @@ const StudentDashboard = () => {
                   <Button size="sm" onClick={() => navigate("/student/trail")} className="w-full">
                     Continuar Trilha <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
+                </div> :
+
+              <p className="text-muted-foreground text-sm">
                   Nenhuma trilha atribuída ainda. Aguarde a matrícula pela sua instituição.
                 </p>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -141,8 +141,8 @@ const StudentDashboard = () => {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>);
+
 };
 
 export default StudentDashboard;
