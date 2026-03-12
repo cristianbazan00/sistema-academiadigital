@@ -155,7 +155,14 @@ const FacilitatorClasses = () => {
                           <TableBody>
                             {c.students.map((s) => (
                               <TableRow key={s.id}>
-                                <TableCell className="font-medium">{s.full_name}</TableCell>
+                                <TableCell>
+                                  <button
+                                    className="text-primary hover:underline font-medium text-left"
+                                    onClick={() => setSelectedStudent({ id: s.id, name: s.full_name })}
+                                  >
+                                    {s.full_name}
+                                  </button>
+                                </TableCell>
                                 <TableCell>{s.level}</TableCell>
                                 <TableCell className="font-mono">{s.xp_total}</TableCell>
                               </TableRow>
