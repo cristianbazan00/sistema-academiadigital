@@ -12,11 +12,13 @@ import { subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { TrailContentSection } from "@/components/facilitator/TrailContentSection";
+import { StudentProgressDialog } from "@/components/facilitator/StudentProgressDialog";
 
 interface DashboardData {
   kpis: { classes: number; students: number; extras: number; avg_completion: number };
   class_completions: { name: string; completion: number }[];
-  student_ranking: { full_name: string; xp_total: number; level: number; class_name: string }[];
+  student_ranking: { user_id: string; full_name: string; xp_total: number; level: number; class_name: string }[];
 }
 
 const chartConfig = {
@@ -31,6 +33,7 @@ const FacilitatorDashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
 
   const loadData = async () => {
     if (!user) return;
@@ -169,7 +172,14 @@ const FacilitatorDashboard = () => {
                     {data!.student_ranking.map((s, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-bold">{i + 1}</TableCell>
-                        <TableCell>{s.full_name}</TableCell>
+                        <TableCell>
+                          <button
+                            className="text-primary hover:underline font-medium text-left"
+                            onClick={() => setSelectedStudent({ id: s.user_id, name: s.full_name })}
+                          >
+                            {s.full_name}
+                          </button>
+                        </TableCell>
                         <TableCell>{s.class_name}</TableCell>
                         <TableCell>{s.level}</TableCell>
                         <TableCell className="font-mono">{s.xp_total}</TableCell>
@@ -181,6 +191,17 @@ const FacilitatorDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Trail content section */}
+        <TrailContentSection />
+
+        {/* Student progress dialog */}
+        <StudentProgressDialog
+          studentId={selectedStudent?.id ?? ""}
+          studentName={selectedStudent?.name ?? ""}
+          open={!!selectedStudent}
+          onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}
+        />
       </div>
     </DashboardLayout>
   );

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Plus, ClipboardList } from "lucide-react";
 import { ExtraActivityDialog } from "@/components/facilitator/ExtraActivityDialog";
+import { StudentProgressDialog } from "@/components/facilitator/StudentProgressDialog";
 
 interface ClassInfo {
   id: string;
