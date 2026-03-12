@@ -203,6 +203,13 @@ const FacilitatorClasses = () => {
           classId={selectedClassId}
           onSaved={fetchClasses}
         />
+
+        <StudentProgressDialog
+          studentId={selectedStudent?.id ?? ""}
+          studentName={selectedStudent?.name ?? ""}
+          open={!!selectedStudent}
+          onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}
+        />
       </div>
     </DashboardLayout>
   );
