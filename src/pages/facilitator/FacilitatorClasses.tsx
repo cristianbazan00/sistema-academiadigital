@@ -26,6 +26,7 @@ const FacilitatorClasses = () => {
   const [loading, setLoading] = useState(true);
   const [extraDialogOpen, setExtraDialogOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
 
   const fetchClasses = async () => {
     if (!user) return;
