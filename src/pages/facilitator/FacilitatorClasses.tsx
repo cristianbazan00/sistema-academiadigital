@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Plus, ClipboardList } from "lucide-react";
 import { ExtraActivityDialog } from "@/components/facilitator/ExtraActivityDialog";
+import { StudentProgressDialog } from "@/components/facilitator/StudentProgressDialog";
 
 interface ClassInfo {
   id: string;
@@ -25,6 +26,7 @@ const FacilitatorClasses = () => {
   const [loading, setLoading] = useState(true);
   const [extraDialogOpen, setExtraDialogOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
 
   const fetchClasses = async () => {
     if (!user) return;
@@ -153,7 +155,14 @@ const FacilitatorClasses = () => {
                           <TableBody>
                             {c.students.map((s) => (
                               <TableRow key={s.id}>
-                                <TableCell className="font-medium">{s.full_name}</TableCell>
+                                <TableCell>
+                                  <button
+                                    className="text-primary hover:underline font-medium text-left"
+                                    onClick={() => setSelectedStudent({ id: s.id, name: s.full_name })}
+                                  >
+                                    {s.full_name}
+                                  </button>
+                                </TableCell>
                                 <TableCell>{s.level}</TableCell>
                                 <TableCell className="font-mono">{s.xp_total}</TableCell>
                               </TableRow>
@@ -193,6 +202,13 @@ const FacilitatorClasses = () => {
           onOpenChange={setExtraDialogOpen}
           classId={selectedClassId}
           onSaved={fetchClasses}
+        />
+
+        <StudentProgressDialog
+          studentId={selectedStudent?.id ?? ""}
+          studentName={selectedStudent?.name ?? ""}
+          open={!!selectedStudent}
+          onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}
         />
       </div>
     </DashboardLayout>
