@@ -5,10 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { QuestionEditor } from "./QuestionEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Video, FileText, HelpCircle, Brain, Paperclip } from "lucide-react";
+import { Plus, Trash2, Video, FileText, HelpCircle, Brain, Paperclip, Pencil, Check, X, ChevronDown } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type StepType = Database["public"]["Enums"]["lesson_step_type"];
@@ -48,8 +49,13 @@ export function StepEditor({ lessonId, steps, onUpdated }: Props) {
   const [contentUrl, setContentUrl] = useState("");
   const [contentBody, setContentBody] = useState("");
   const [saving, setSaving] = useState(false);
-  // questions per activity
   const [questionsMap, setQuestionsMap] = useState<Record<string, Question[]>>({});
+
+  // Editing state
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContentUrl, setEditContentUrl] = useState("");
+  const [editContentBody, setEditContentBody] = useState("");
 
   useEffect(() => {
     const activityIds = steps.filter((s) => s.activity_id).map((s) => s.activity_id!);
@@ -98,8 +104,27 @@ export function StepEditor({ lessonId, steps, onUpdated }: Props) {
     onUpdated();
   };
 
+  const startEdit = (step: Step) => {
+    setEditingStepId(step.id);
+    setEditTitle(step.title);
+    setEditContentUrl(step.content_url ?? "");
+    setEditContentBody(step.content_body ?? "");
+  };
+
+  const handleSaveEdit = async (stepId: string) => {
+    if (!editTitle.trim()) { toast.error("Título é obrigatório"); return; }
+    const { error } = await supabase.from("lesson_steps").update({
+      title: editTitle.trim(),
+      content_url: editContentUrl.trim() || null,
+      content_body: editContentBody.trim() || null,
+    }).eq("id", stepId);
+    if (error) { toast.error(error.message); return; }
+    setEditingStepId(null);
+    onUpdated();
+  };
+
   const loadQuestions = () => {
-    onUpdated(); // will re-trigger effect
+    onUpdated();
   };
 
   return (
@@ -109,16 +134,65 @@ export function StepEditor({ lessonId, steps, onUpdated }: Props) {
       {steps.map((step) => (
         <Card key={step.id} className="bg-muted/20">
           <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              {stepIcons[step.step_type]}
-              <span className="text-sm font-medium flex-1">{step.title}</span>
-              <Badge stepType={step.step_type} />
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(step)}>
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            </div>
-            {step.content_url && <p className="text-xs text-muted-foreground mt-1 truncate">{step.content_url}</p>}
-            {step.activity_id && (
+            {editingStepId === step.id ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Título</Label>
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="h-8 text-sm" autoFocus />
+                </div>
+                {(step.step_type === "video" || step.step_type === "pdf") && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">URL do conteúdo</Label>
+                    <Input value={editContentUrl} onChange={(e) => setEditContentUrl(e.target.value)} placeholder="https://..." className="h-8 text-sm" />
+                  </div>
+                )}
+                {(step.step_type === "supplementary" || step.step_type === "video" || step.step_type === "pdf") && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Conteúdo</Label>
+                    <Textarea value={editContentBody} onChange={(e) => setEditContentBody(e.target.value)} className="text-sm font-mono" rows={8} />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => handleSaveEdit(step.id)}>
+                    <Check className="h-3.5 w-3.5 mr-1" /> Salvar
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditingStepId(null)}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  {stepIcons[step.step_type]}
+                  <span className="text-sm font-medium flex-1">{step.title}</span>
+                  <StepBadge stepType={step.step_type} />
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(step)}>
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(step)}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+                {step.content_url && (
+                  <p className="text-xs text-muted-foreground mt-1 break-all">{step.content_url}</p>
+                )}
+                {step.content_body && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-1 text-xs text-primary mt-2 hover:underline">
+                      <ChevronDown className="h-3 w-3" /> Ver conteúdo
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div
+                        className="mt-2 p-3 bg-background rounded border text-sm prose prose-sm max-w-none dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: step.content_body }}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </>
+            )}
+            {step.activity_id && editingStepId !== step.id && (
               <div className="mt-2">
                 <QuestionEditor activityId={step.activity_id} questions={questionsMap[step.activity_id] ?? []} onUpdated={loadQuestions} />
               </div>
@@ -174,7 +248,7 @@ export function StepEditor({ lessonId, steps, onUpdated }: Props) {
   );
 }
 
-function Badge({ stepType }: { stepType: StepType }) {
+function StepBadge({ stepType }: { stepType: StepType }) {
   return (
     <span className="text-[10px] font-medium bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
       {stepLabels[stepType]}

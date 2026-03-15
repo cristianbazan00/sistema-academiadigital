@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { StepEditor } from "./StepEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChevronRight, Plus, Trash2, BookOpen } from "lucide-react";
+import { ChevronRight, Plus, Trash2, BookOpen, Pencil, Check, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type StepType = Database["public"]["Enums"]["lesson_step_type"];
@@ -29,6 +29,8 @@ interface Props {
 export function LessonSection({ moduleId, lessons, stepsMap, onUpdated }: Props) {
   const [addingTitle, setAddingTitle] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   const handleAdd = async () => {
     if (!addingTitle.trim()) return;
@@ -46,20 +48,60 @@ export function LessonSection({ moduleId, lessons, stepsMap, onUpdated }: Props)
     onUpdated();
   };
 
+  const startEdit = (lesson: Lesson) => {
+    setEditingId(lesson.id);
+    setEditTitle(lesson.title);
+  };
+
+  const handleSaveTitle = async (id: string) => {
+    if (!editTitle.trim()) { toast.error("Título é obrigatório"); return; }
+    const { error } = await supabase.from("lessons").update({ title: editTitle.trim() }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setEditingId(null);
+    onUpdated();
+  };
+
   return (
     <div className="space-y-2">
       {lessons.map((lesson) => (
         <Collapsible key={lesson.id}>
           <div className="flex items-center gap-2 rounded-md hover:bg-muted/50 px-2 py-1.5">
-            <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-90" />
-              <BookOpen className="h-3.5 w-3.5 text-primary" />
-              <span className="text-sm font-medium">{lesson.title}</span>
-              <span className="text-xs text-muted-foreground ml-auto">{(stepsMap[lesson.id] ?? []).length} passos</span>
-            </CollapsibleTrigger>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(lesson.id)}>
-              <Trash2 className="h-3 w-3 text-destructive" />
-            </Button>
+            {editingId === lesson.id ? (
+              <div className="flex items-center gap-2 flex-1">
+                <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="h-7 text-sm flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveTitle(lesson.id);
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                />
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleSaveTitle(lesson.id)}>
+                  <Check className="h-3 w-3 text-primary" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingId(null)}>
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-90" />
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-sm font-medium">{lesson.title}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{(stepsMap[lesson.id] ?? []).length} passos</span>
+                </CollapsibleTrigger>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(lesson)}>
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(lesson.id)}>
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              </>
+            )}
           </div>
           <CollapsibleContent className="pl-6 pt-1 pb-2">
             <StepEditor lessonId={lesson.id} steps={stepsMap[lesson.id] ?? []} onUpdated={onUpdated} />
