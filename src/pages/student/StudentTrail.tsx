@@ -6,7 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Lock, PlayCircle, BookOpen } from "lucide-react";
+import { CheckCircle, Lock, PlayCircle, BookOpen, CalendarClock } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Lesson {
   id: string;
@@ -29,6 +31,7 @@ const StudentTrail = () => {
   const [trailTitle, setTrailTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleDates, setScheduleDates] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!user) return;
@@ -46,13 +49,25 @@ const StudentTrail = () => {
       const classIds = memberships.map((m) => m.class_id);
       const { data: classes } = await supabase
         .from("classes")
-        .select("trail_id")
+        .select("id, trail_id")
         .in("id", classIds)
         .not("trail_id", "is", null)
         .limit(1);
 
       const trailId = classes?.[0]?.trail_id;
+      const studentClassId = classes?.[0]?.id;
       if (!trailId) { setLoading(false); return; }
+
+      // Fetch lesson schedules for this class
+      if (studentClassId) {
+        const { data: scheds } = await supabase
+          .from("class_lesson_schedules" as any)
+          .select("lesson_id, release_date")
+          .eq("class_id", studentClassId);
+        const map = new Map<string, string>();
+        (scheds ?? []).forEach((s: any) => map.set(s.lesson_id, s.release_date));
+        setScheduleDates(map);
+      }
 
       // Fetch trail info
       const { data: trail } = await supabase.from("trails").select("title").eq("id", trailId).single();
@@ -103,7 +118,17 @@ const StudentTrail = () => {
     load();
   }, [user]);
 
+  const isLessonScheduled = (lessonId: string): string | null => {
+    const rd = scheduleDates.get(lessonId);
+    if (!rd) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    return rd > today ? rd : null; // null means released
+  };
+
   const isLessonAvailable = (mod: Module, lessonIdx: number) => {
+    const lesson = mod.lessons[lessonIdx];
+    // Check schedule first
+    if (isLessonScheduled(lesson.id)) return false;
     if (lessonIdx === 0) return true;
     return mod.lessons[lessonIdx - 1]?.completed;
   };
@@ -150,6 +175,7 @@ const StudentTrail = () => {
                       )}
                       {mod.lessons.map((lesson, idx) => {
                         const available = isLessonAvailable(mod, idx);
+                        const scheduledDate = isLessonScheduled(lesson.id);
                         return (
                           <button
                             key={lesson.id}
@@ -165,12 +191,21 @@ const StudentTrail = () => {
                           >
                             {lesson.completed ? (
                               <CheckCircle className="h-5 w-5 text-primary shrink-0" />
+                            ) : scheduledDate ? (
+                              <CalendarClock className="h-5 w-5 text-muted-foreground shrink-0" />
                             ) : available ? (
                               <PlayCircle className="h-5 w-5 text-muted-foreground shrink-0" />
                             ) : (
                               <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
                             )}
-                            <span className="text-sm font-medium">{lesson.title}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{lesson.title}</span>
+                              {scheduledDate && (
+                                <span className="text-xs text-muted-foreground">
+                                  Disponível em {format(new Date(scheduledDate + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                                </span>
+                              )}
+                            </div>
                           </button>
                         );
                       })}

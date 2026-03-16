@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, CalendarDays } from "lucide-react";
 import { ClassDialog } from "@/components/institution/ClassDialog";
 import { ClassMembersDialog } from "@/components/institution/ClassMembersDialog";
+import { LessonScheduleDialog } from "@/components/institution/LessonScheduleDialog";
 
 interface ClassRow {
   id: string;
@@ -32,6 +33,8 @@ const InstitutionClasses = () => {
   const [editClass, setEditClass] = useState<ClassRow | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleClass, setScheduleClass] = useState<{ id: string; name: string; trailId: string } | null>(null);
 
   const fetchClasses = async () => {
     if (!user) return;
@@ -124,6 +127,11 @@ const InstitutionClasses = () => {
                         <Button size="sm" variant="ghost" onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setMembersOpen(true); }}>
                           <Users className="h-4 w-4" />
                         </Button>
+                        {c.trail_id && (
+                          <Button size="sm" variant="ghost" title="Agendar aulas" onClick={() => { setScheduleClass({ id: c.id, name: c.name, trailId: c.trail_id! }); setScheduleOpen(true); }}>
+                            <CalendarDays className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -135,6 +143,9 @@ const InstitutionClasses = () => {
 
         <ClassDialog open={dialogOpen} onOpenChange={setDialogOpen} classData={editClass} onSaved={fetchClasses} />
         <ClassMembersDialog open={membersOpen} onOpenChange={(v) => { setMembersOpen(v); if (!v) fetchClasses(); }} classId={selectedClass?.id ?? null} className={selectedClass?.name ?? ""} />
+        {scheduleClass && (
+          <LessonScheduleDialog open={scheduleOpen} onOpenChange={setScheduleOpen} classId={scheduleClass.id} className={scheduleClass.name} trailId={scheduleClass.trailId} />
+        )}
       </div>
     </DashboardLayout>
   );
