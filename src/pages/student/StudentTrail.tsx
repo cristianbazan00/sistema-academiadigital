@@ -49,13 +49,25 @@ const StudentTrail = () => {
       const classIds = memberships.map((m) => m.class_id);
       const { data: classes } = await supabase
         .from("classes")
-        .select("trail_id")
+        .select("id, trail_id")
         .in("id", classIds)
         .not("trail_id", "is", null)
         .limit(1);
 
       const trailId = classes?.[0]?.trail_id;
+      const studentClassId = classes?.[0]?.id;
       if (!trailId) { setLoading(false); return; }
+
+      // Fetch lesson schedules for this class
+      if (studentClassId) {
+        const { data: scheds } = await supabase
+          .from("class_lesson_schedules" as any)
+          .select("lesson_id, release_date")
+          .eq("class_id", studentClassId);
+        const map = new Map<string, string>();
+        (scheds ?? []).forEach((s: any) => map.set(s.lesson_id, s.release_date));
+        setScheduleDates(map);
+      }
 
       // Fetch trail info
       const { data: trail } = await supabase.from("trails").select("title").eq("id", trailId).single();
