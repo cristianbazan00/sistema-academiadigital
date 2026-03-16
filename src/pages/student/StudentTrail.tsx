@@ -6,7 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Lock, PlayCircle, BookOpen } from "lucide-react";
+import { CheckCircle, Lock, PlayCircle, BookOpen, CalendarClock } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Lesson {
   id: string;
