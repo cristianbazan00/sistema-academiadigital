@@ -130,6 +130,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/facilitator/trail"
+                element={
+                  <ProtectedRoute allowedRoles={["facilitator"]}>
+                    <FacilitatorTrailView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/student"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
