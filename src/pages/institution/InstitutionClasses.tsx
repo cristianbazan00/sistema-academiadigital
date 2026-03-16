@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, CalendarDays } from "lucide-react";
 import { ClassDialog } from "@/components/institution/ClassDialog";
 import { ClassMembersDialog } from "@/components/institution/ClassMembersDialog";
+import { LessonScheduleDialog } from "@/components/institution/LessonScheduleDialog";
 
 interface ClassRow {
   id: string;
