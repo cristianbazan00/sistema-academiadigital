@@ -115,6 +115,45 @@ export type Database = {
         }
         Relationships: []
       }
+      class_lesson_schedules: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          lesson_id: string
+          release_date: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          release_date: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          release_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_lesson_schedules_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_lesson_schedules_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_members: {
         Row: {
           class_id: string
