@@ -33,6 +33,8 @@ const InstitutionClasses = () => {
   const [editClass, setEditClass] = useState<ClassRow | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<{ id: string; name: string } | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleClass, setScheduleClass] = useState<{ id: string; name: string; trailId: string } | null>(null);
 
   const fetchClasses = async () => {
     if (!user) return;
