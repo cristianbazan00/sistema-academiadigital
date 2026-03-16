@@ -31,6 +31,7 @@ const StudentTrail = () => {
   const [trailTitle, setTrailTitle] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleDates, setScheduleDates] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!user) return;
