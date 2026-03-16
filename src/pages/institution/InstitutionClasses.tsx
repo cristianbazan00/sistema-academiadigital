@@ -127,6 +127,11 @@ const InstitutionClasses = () => {
                         <Button size="sm" variant="ghost" onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setMembersOpen(true); }}>
                           <Users className="h-4 w-4" />
                         </Button>
+                        {c.trail_id && (
+                          <Button size="sm" variant="ghost" title="Agendar aulas" onClick={() => { setScheduleClass({ id: c.id, name: c.name, trailId: c.trail_id! }); setScheduleOpen(true); }}>
+                            <CalendarDays className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
