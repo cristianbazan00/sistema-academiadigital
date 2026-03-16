@@ -143,6 +143,9 @@ const InstitutionClasses = () => {
 
         <ClassDialog open={dialogOpen} onOpenChange={setDialogOpen} classData={editClass} onSaved={fetchClasses} />
         <ClassMembersDialog open={membersOpen} onOpenChange={(v) => { setMembersOpen(v); if (!v) fetchClasses(); }} classId={selectedClass?.id ?? null} className={selectedClass?.name ?? ""} />
+        {scheduleClass && (
+          <LessonScheduleDialog open={scheduleOpen} onOpenChange={setScheduleOpen} classId={scheduleClass.id} className={scheduleClass.name} trailId={scheduleClass.trailId} />
+        )}
       </div>
     </DashboardLayout>
   );

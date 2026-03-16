@@ -175,6 +175,7 @@ const StudentTrail = () => {
                       )}
                       {mod.lessons.map((lesson, idx) => {
                         const available = isLessonAvailable(mod, idx);
+                        const scheduledDate = isLessonScheduled(lesson.id);
                         return (
                           <button
                             key={lesson.id}
@@ -190,12 +191,21 @@ const StudentTrail = () => {
                           >
                             {lesson.completed ? (
                               <CheckCircle className="h-5 w-5 text-primary shrink-0" />
+                            ) : scheduledDate ? (
+                              <CalendarClock className="h-5 w-5 text-muted-foreground shrink-0" />
                             ) : available ? (
                               <PlayCircle className="h-5 w-5 text-muted-foreground shrink-0" />
                             ) : (
                               <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
                             )}
-                            <span className="text-sm font-medium">{lesson.title}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{lesson.title}</span>
+                              {scheduledDate && (
+                                <span className="text-xs text-muted-foreground">
+                                  Disponível em {format(new Date(scheduledDate + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                                </span>
+                              )}
+                            </div>
                           </button>
                         );
                       })}
