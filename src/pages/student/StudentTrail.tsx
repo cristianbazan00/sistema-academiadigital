@@ -118,7 +118,17 @@ const StudentTrail = () => {
     load();
   }, [user]);
 
+  const isLessonScheduled = (lessonId: string): string | null => {
+    const rd = scheduleDates.get(lessonId);
+    if (!rd) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    return rd > today ? rd : null; // null means released
+  };
+
   const isLessonAvailable = (mod: Module, lessonIdx: number) => {
+    const lesson = mod.lessons[lessonIdx];
+    // Check schedule first
+    if (isLessonScheduled(lesson.id)) return false;
     if (lessonIdx === 0) return true;
     return mod.lessons[lessonIdx - 1]?.completed;
   };
