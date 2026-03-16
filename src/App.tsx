@@ -27,6 +27,7 @@ import InstitutionFacilitators from "./pages/institution/InstitutionFacilitators
 import InstitutionImport from "./pages/institution/InstitutionImport";
 import FacilitatorDashboard from "./pages/facilitator/FacilitatorDashboard";
 import FacilitatorClasses from "./pages/facilitator/FacilitatorClasses";
+import FacilitatorTrailView from "./pages/facilitator/FacilitatorTrailView";
 import StudentReports from "./pages/student/StudentReports";
 import NotFound from "./pages/NotFound";
 
@@ -125,6 +126,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["facilitator"]}>
                     <FacilitatorClasses />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/facilitator/trail"
+                element={
+                  <ProtectedRoute allowedRoles={["facilitator"]}>
+                    <FacilitatorTrailView />
                   </ProtectedRoute>
                 }
               />
