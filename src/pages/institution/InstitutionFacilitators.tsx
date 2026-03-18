@@ -48,7 +48,7 @@ const InstitutionFacilitators = () => {
     const profileIds = profiles.map((p) => p.id);
     const { data: members } = await supabase
       .from("class_members")
-      .select("user_id, classes(id, name)")
+      .select("user_id, classes!class_members_class_id_fkey(id, name)")
       .eq("role", "facilitator")
       .in("user_id", profileIds);
 
