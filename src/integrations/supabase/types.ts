@@ -184,20 +184,6 @@ export type Database = {
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_class_members_class"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_class_members_user"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       classes: {

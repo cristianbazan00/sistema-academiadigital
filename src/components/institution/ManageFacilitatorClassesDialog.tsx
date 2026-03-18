@@ -46,7 +46,7 @@ export function ManageFacilitatorClassesDialog({ open, onOpenChange, facilitator
     // Facilitator's assigned classes
     const { data: members } = await supabase
       .from("class_members")
-      .select("class_id, classes(id, name)")
+      .select("class_id, classes!class_members_class_id_fkey(id, name)")
       .eq("user_id", facilitatorId)
       .eq("role", "facilitator");
 

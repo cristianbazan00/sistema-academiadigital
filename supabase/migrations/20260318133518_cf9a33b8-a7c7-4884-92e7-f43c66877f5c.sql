@@ -1,0 +1,2 @@
+ALTER TABLE class_members DROP CONSTRAINT fk_class_members_class;
+ALTER TABLE class_members DROP CONSTRAINT fk_class_members_user;
