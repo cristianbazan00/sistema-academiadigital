@@ -1,31 +1,31 @@
 
 
-## CRUD Completo para Facilitadores
+## CRUD Completo para Facilitadores — Implementação
 
-### Situação Atual
-A tela de facilitadores só permite **criar** e **gerenciar turmas**. Falta editar nome e remover facilitadores.
+O plano foi verificado e **não foi executado**. Todos os três arquivos estão no estado original. Vou implementar agora.
 
 ### Alterações
 
-**1. Edge Function `activate-account` — Novas actions**
-- `update_facilitator`: recebe `user_id` e `full_name`, atualiza `profiles` via service role
-- `delete_facilitator`: recebe `user_id`, remove de `class_members`, `user_roles`, limpa `institution_id` do profile, e deleta o usuário do auth
+**1. `supabase/functions/activate-account/index.ts`**
+- Adicionar action `update_facilitator` (recebe `user_id`, `full_name`, atualiza `profiles`)
+- Adicionar action `delete_facilitator` (recebe `user_id`, remove de `class_members`, `user_roles`, limpa `institution_id`, deleta usuário do auth)
 
-**2. `FacilitatorDialog.tsx` — Suportar modo edição**
-- Receber prop opcional `facilitator: { id, full_name }` para modo edição
-- Em modo edição: preencher campos, ocultar email/CPF (não editáveis), chamar action `update_facilitator`
+**2. `src/components/institution/FacilitatorDialog.tsx`**
+- Adicionar prop opcional `facilitator: { id, full_name } | null`
+- Em modo edição: preencher nome, ocultar email/CPF, chamar `update_facilitator`
 - Em modo criação: comportamento atual
+- Usar `useEffect` para preencher campos quando `facilitator` muda
 
-**3. `InstitutionFacilitators.tsx` — Botões de editar e remover**
-- Adicionar botão de editar (ícone Pencil) que abre `FacilitatorDialog` em modo edição
-- Adicionar botão de remover (ícone Trash2) com `AlertDialog` de confirmação
-- Ao confirmar remoção, chamar action `delete_facilitator` na edge function
+**3. `src/pages/institution/InstitutionFacilitators.tsx`**
+- Adicionar botão Pencil (editar) que abre FacilitatorDialog em modo edição
+- Adicionar botão Trash2 (remover) com AlertDialog de confirmação
+- Ao confirmar, chamar `delete_facilitator` na edge function
 
 ### Arquivos
 
 | Arquivo | Ação |
 |---------|------|
-| `supabase/functions/activate-account/index.ts` | Adicionar actions `update_facilitator` e `delete_facilitator` |
-| `src/components/institution/FacilitatorDialog.tsx` | Suportar modo edição com prop `facilitator` |
-| `src/pages/institution/InstitutionFacilitators.tsx` | Adicionar botões editar/remover com confirmação |
+| `supabase/functions/activate-account/index.ts` | Adicionar 2 novas actions |
+| `src/components/institution/FacilitatorDialog.tsx` | Suportar modo edição |
+| `src/pages/institution/InstitutionFacilitators.tsx` | Botões editar/remover |
 
