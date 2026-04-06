@@ -6,9 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Settings, Pencil, Trash2 } from "lucide-react";
 import { FacilitatorDialog } from "@/components/institution/FacilitatorDialog";
 import { ManageFacilitatorClassesDialog } from "@/components/institution/ManageFacilitatorClassesDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FacilitatorClass {
   id: string;
@@ -23,10 +34,14 @@ interface Facilitator {
 
 const InstitutionFacilitators = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [facilitators, setFacilitators] = useState<Facilitator[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [selectedFacilitator, setSelectedFacilitator] = useState<Facilitator | null>(null);
+  const [editFacilitator, setEditFacilitator] = useState<{ id: string; full_name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Facilitator | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchFacilitators = async () => {
     if (!user) return;
@@ -72,12 +87,45 @@ const InstitutionFacilitators = () => {
     setManageOpen(true);
   };
 
+  const openEdit = (f: Facilitator) => {
+    setEditFacilitator({ id: f.id, full_name: f.full_name });
+    setDialogOpen(true);
+  };
+
+  const openCreate = () => {
+    setEditFacilitator(null);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const response = await supabase.functions.invoke("activate-account", {
+        body: { action: "delete_facilitator", user_id: deleteTarget.id },
+      });
+
+      if (response.error || response.data?.error) {
+        const msg = response.data?.error || String(response.error);
+        toast({ title: "Erro ao remover facilitador", description: msg, variant: "destructive" });
+      } else {
+        toast({ title: "Facilitador removido com sucesso" });
+        fetchFacilitators();
+      }
+    } catch {
+      toast({ title: "Erro inesperado", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-display font-bold">Facilitadores</h1>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Novo Facilitador
           </Button>
         </div>
@@ -93,7 +141,7 @@ const InstitutionFacilitators = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Turmas</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
+                    <TableHead className="w-32">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -112,9 +160,17 @@ const InstitutionFacilitators = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => openManage(f)} title="Gerenciar turmas">
-                          <Settings className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(f)} title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openManage(f)} title="Gerenciar turmas">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(f)} title="Remover">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -124,7 +180,12 @@ const InstitutionFacilitators = () => {
           </CardContent>
         </Card>
 
-        <FacilitatorDialog open={dialogOpen} onOpenChange={setDialogOpen} onSaved={fetchFacilitators} />
+        <FacilitatorDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSaved={fetchFacilitators}
+          facilitator={editFacilitator}
+        />
         <ManageFacilitatorClassesDialog
           open={manageOpen}
           onOpenChange={setManageOpen}
@@ -132,6 +193,23 @@ const InstitutionFacilitators = () => {
           facilitatorName={selectedFacilitator?.full_name ?? ""}
           onSaved={fetchFacilitators}
         />
+
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover facilitador</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover <strong>{deleteTarget?.full_name}</strong>? Esta ação é irreversível e removerá o facilitador de todas as turmas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleting ? "Removendo..." : "Remover"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

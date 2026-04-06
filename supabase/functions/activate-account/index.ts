@@ -143,6 +143,80 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── UPDATE FACILITATOR ──
+    if (action === "update_facilitator") {
+      const { user_id, full_name } = body;
+
+      if (!user_id || !full_name) {
+        return new Response(
+          JSON.stringify({ error: "ID e nome são obrigatórios." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("profiles")
+        .update({ full_name })
+        .eq("id", user_id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── DELETE FACILITATOR ──
+    if (action === "delete_facilitator") {
+      const { user_id } = body;
+
+      if (!user_id) {
+        return new Response(
+          JSON.stringify({ error: "ID do facilitador é obrigatório." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Remove from class_members
+      await supabaseAdmin
+        .from("class_members")
+        .delete()
+        .eq("user_id", user_id);
+
+      // Remove from user_roles
+      await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", user_id);
+
+      // Clear institution_id
+      await supabaseAdmin
+        .from("profiles")
+        .update({ institution_id: null })
+        .eq("id", user_id);
+
+      // Delete from auth
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+
+      if (deleteError) {
+        return new Response(
+          JSON.stringify({ error: deleteError.message }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Ação não reconhecida." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
