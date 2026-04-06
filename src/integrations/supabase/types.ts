@@ -245,6 +245,38 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          tenant_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tenant_id: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tenant_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extra_activities: {
         Row: {
           class_id: string | null
@@ -489,6 +521,38 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modules: {
         Row: {
           created_at: string
@@ -581,6 +645,7 @@ export type Database = {
           id: string
           institution_id: string | null
           level: number
+          tenant_id: string | null
           updated_at: string
           xp_total: number
         }
@@ -592,6 +657,7 @@ export type Database = {
           id: string
           institution_id?: string | null
           level?: number
+          tenant_id?: string | null
           updated_at?: string
           xp_total?: number
         }
@@ -603,6 +669,7 @@ export type Database = {
           id?: string
           institution_id?: string | null
           level?: number
+          tenant_id?: string | null
           updated_at?: string
           xp_total?: number
         }
@@ -619,6 +686,13 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -688,6 +762,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenants: {
+        Row: {
+          ai_rules: string | null
+          api_key_encrypted: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          plan: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ai_rules?: string | null
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          plan?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ai_rules?: string | null
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       trails: {
         Row: {
